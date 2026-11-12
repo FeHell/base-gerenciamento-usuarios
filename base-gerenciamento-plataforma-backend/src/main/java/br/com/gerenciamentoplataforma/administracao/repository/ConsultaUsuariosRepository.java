@@ -17,9 +17,21 @@ import static br.com.gerenciamentoplataforma.usuario.repository.UsuarioPerfilRep
 
 public interface ConsultaUsuariosRepository extends Repository<Usuario, UUID> {
 
-    String TIPO_ACESSO = "case when exists (select 1 " + VINCULOS_ATIVOS + """
-            and usuario.id = u.id and aplicacao.id = :administracao
-            and permissao.codigo = :permissaoPlataforma)
+    String VINCULOS_PLATAFORMA_ATIVOS = """
+            from UsuarioPermissaoPlataforma concessao
+            join Permissao permissao on permissao.id = concessao.id.idPermissao
+            join Usuario usuario on usuario.id = concessao.id.idUsuario
+            join UsuarioAplicacao vinculo on vinculo.id.idUsuario = usuario.id and vinculo.id.idAplicacao = :administracao
+            join vinculo.aplicacao aplicacao
+            where permissao.nomePlataforma is not null
+              and vinculo.ativo = true
+              and usuario.status = br.com.gerenciamentoplataforma.usuario.entity.StatusUsuario.ATIVO
+              and aplicacao.status = br.com.gerenciamentoplataforma.common.StatusCadastro.ATIVO
+              and permissao.status = br.com.gerenciamentoplataforma.common.StatusCadastro.ATIVO
+            """;
+
+    String TIPO_ACESSO = "case when exists (select 1 " + VINCULOS_PLATAFORMA_ATIVOS + """
+            and usuario.id = u.id and permissao.codigo = :permissaoPlataforma)
             then 'PLATAFORMA'
             when exists (select 1
             """ + VINCULOS_ATIVOS + """
@@ -28,6 +40,20 @@ public interface ConsultaUsuariosRepository extends Repository<Usuario, UUID> {
             then 'APLICACAO'
             else 'USUARIO' end
             """;
+
+    @Query("select count(usuario) " + VINCULOS_PLATAFORMA_ATIVOS + """
+            and permissao.codigo = :codigo and usuario.id <> :idUsuario
+            """)
+    long contarOutrosAdministradores(UUID administracao, String codigo, UUID idUsuario);
+
+    @Query("""
+            select usuario.id as idUsuario, aplicacao.id as idAplicacao,
+              aplicacao.slug as aplicacao, permissao.codigo as codigo
+            """ + VINCULOS_PLATAFORMA_ATIVOS + """
+              and usuario.id in :usuarios
+            order by permissao.codigo
+            """)
+    List<PermissaoDoUsuario> permissoesDaPlataforma(UUID administracao, List<UUID> usuarios);
 
     @Query("""
             select u from Usuario u
@@ -45,10 +71,10 @@ public interface ConsultaUsuariosRepository extends Repository<Usuario, UUID> {
             select distinct usuario.id as idUsuario, aplicacao.id as idAplicacao,
               aplicacao.slug as aplicacao, permissao.codigo as codigo
             """ + VINCULOS_ATIVOS + """
-              and usuario.id in :usuarios
+              and usuario.id in :usuarios and aplicacao.id <> :administracao
             order by aplicacao.slug, permissao.codigo
             """)
-    List<PermissaoDoUsuario> permissoes(@Param("usuarios") List<UUID> usuarios);
+    List<PermissaoDoUsuario> permissoes(UUID administracao, List<UUID> usuarios);
 
     @Query("""
             select u.status as status, count(u) as total from Usuario u
@@ -68,11 +94,18 @@ public interface ConsultaUsuariosRepository extends Repository<Usuario, UUID> {
     @Query("""
             select aplicacao.slug as aplicacao, permissao.codigo as codigo, count(distinct usuario.id) as total
             """ + VINCULOS_ATIVOS + """
+            and usuario.dataCriacao >= :inicio and usuario.dataCriacao <= :fim and aplicacao.id <> :administracao
+            group by aplicacao.slug, permissao.codigo
+            """)
+    List<ContagemPermissao> contarPorPermissao(UUID administracao, Instant inicio, Instant fim);
+
+    @Query("""
+            select aplicacao.slug as aplicacao, permissao.codigo as codigo, count(usuario) as total
+            """ + VINCULOS_PLATAFORMA_ATIVOS + """
             and usuario.dataCriacao >= :inicio and usuario.dataCriacao <= :fim
             group by aplicacao.slug, permissao.codigo
-            order by count(distinct usuario.id) desc, aplicacao.slug, permissao.codigo
             """)
-    List<ContagemPermissao> contarPorPermissao(Instant inicio, Instant fim);
+    List<ContagemPermissao> contarPorPermissaoDaPlataforma(UUID administracao, Instant inicio, Instant fim);
 
     long countByDataCriacaoBetween(Instant inicio, Instant fim);
 

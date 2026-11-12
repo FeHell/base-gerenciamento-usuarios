@@ -7,10 +7,12 @@ import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.AuditoriaInfo;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovaAplicacao;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovaPermissao;
+import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovaPermissaoPlataforma;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovaSenha;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovoUsuario;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.Pagina;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.PermissaoInfo;
+import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.PermissaoPlataformaInfo;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.UsuarioInfo;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.UsuarioListagem;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.TipoAcessoUsuario;
@@ -22,6 +24,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -109,6 +112,17 @@ public class AdministracaoPlataformaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void alterarSenha(@PathVariable UUID id, @Valid @RequestBody NovaSenha dados) {
         administracao.alterarSenha(id, dados.senha());
+    }
+
+    @GetMapping("/permissoes-plataforma")
+    public List<PermissaoPlataformaInfo> listarPermissoesPlataforma() {
+        return administracao.listarPermissoesPlataforma();
+    }
+
+    @PostMapping("/permissoes-plataforma")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PermissaoPlataformaInfo criarPermissaoPlataforma(@Valid @RequestBody NovaPermissaoPlataforma dados) {
+        return administracao.criarPermissaoPlataforma(dados);
     }
 
     @GetMapping("/permissoes")

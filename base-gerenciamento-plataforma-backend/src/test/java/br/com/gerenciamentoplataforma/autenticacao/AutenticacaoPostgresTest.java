@@ -1,5 +1,6 @@
 package br.com.gerenciamentoplataforma.autenticacao;
 
+import br.com.gerenciamentoplataforma.persistencia.ConexaoPostgresTeste;
 import br.com.gerenciamentoplataforma.autenticacao.dto.TokensAutenticacao;
 import br.com.gerenciamentoplataforma.autenticacao.service.TokenJwt;
 
@@ -46,9 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "spring.liquibase.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.default_schema=public",
-        "spring.datasource.hikari.schema=public"
+        "spring.jpa.hibernate.ddl-auto=validate"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
@@ -87,15 +86,7 @@ class AutenticacaoPostgresTest {
 
     @DynamicPropertySource
     static void configurarConexao(DynamicPropertyRegistry propriedades) {
-        String usuarioBanco = System.getenv("DATABASE_USERNAME");
-        if (usuarioBanco == null || usuarioBanco.isBlank()) {
-            throw new IllegalStateException("Defina e exporte DATABASE_USERNAME no Terminal antes de rodar "
-                    + "AutenticacaoPostgresTest. Veja o bloco de testes no README.md.");
-        }
-        propriedades.add("spring.datasource.url",
-                () -> "jdbc:postgresql://127.0.0.1:5432/gerenciamento_usuarios");
-        propriedades.add("spring.datasource.username", () -> usuarioBanco);
-        propriedades.add("spring.datasource.password", () -> System.getenv().getOrDefault("DATABASE_PASSWORD", ""));
+        ConexaoPostgresTeste.configurar(propriedades);
     }
 
     @BeforeEach

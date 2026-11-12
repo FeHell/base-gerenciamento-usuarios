@@ -44,10 +44,10 @@ const codigosEfetivos = computed(
     aria-labelledby="permissoes-usuario"
     :aria-busy="carregando || !!operacao"
   >
-    <h2 id="permissoes-usuario">Permissões</h2>
+    <h2 id="permissoes-usuario">Acessos por aplicação</h2>
     <p class="auxiliar">
-      As permissões vêm dos perfis atribuídos em cada aplicação. Atribuições e remoções são salvas
-      nesta seção.
+      As permissões de outras aplicações vêm dos perfis. Atribuições e remoções são salvas nesta
+      seção.
     </p>
     <p v-if="carregandoAplicacoes" role="status">Carregando aplicações…</p>
     <div v-else-if="erroAplicacoes" class="mensagem">

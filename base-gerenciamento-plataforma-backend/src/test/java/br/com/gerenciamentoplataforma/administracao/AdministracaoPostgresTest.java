@@ -1,5 +1,6 @@
 package br.com.gerenciamentoplataforma.administracao;
 
+import br.com.gerenciamentoplataforma.persistencia.ConexaoPostgresTeste;
 import br.com.gerenciamentoplataforma.administracao.service.AcessoAdministrativo;
 import br.com.gerenciamentoplataforma.autenticacao.dto.TokensAutenticacao;
 
@@ -29,6 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,9 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "spring.liquibase.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.default_schema=public",
-        "spring.datasource.hikari.schema=public"
+        "spring.jpa.hibernate.ddl-auto=validate"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
@@ -65,17 +65,12 @@ class AdministracaoPostgresTest {
     private UUID idPermissaoPlataforma;
     private UUID idPermissaoAplicacao;
     private String tokenPlataforma;
+    private UUID operador;
+    private String slugPlataforma;
 
     @DynamicPropertySource
     static void configurar(DynamicPropertyRegistry propriedades) {
-        String usuarioBanco = System.getenv("DATABASE_USERNAME");
-        if (usuarioBanco == null || usuarioBanco.isBlank()) {
-            throw new IllegalStateException("Defina e exporte DATABASE_USERNAME no Terminal antes dos testes.");
-        }
-        propriedades.add("spring.datasource.url",
-                () -> "jdbc:postgresql://127.0.0.1:5432/gerenciamento_usuarios");
-        propriedades.add("spring.datasource.username", () -> usuarioBanco);
-        propriedades.add("spring.datasource.password", () -> System.getenv().getOrDefault("DATABASE_PASSWORD", ""));
+        ConexaoPostgresTeste.configurar(propriedades);
         propriedades.add(AcessoAdministrativo.PROPRIEDADE_APLICACAO, ID_PLATAFORMA::toString);
     }
 
@@ -83,10 +78,9 @@ class AdministracaoPostgresTest {
     void preparar() throws Exception {
         assertThat(jdbc.queryForObject("select current_database()", String.class))
                 .isEqualTo("gerenciamento_usuarios");
-        String slugPlataforma = "teste-" + ID_PLATAFORMA;
-        UUID operador = UUID.randomUUID();
+        slugPlataforma = "teste-" + ID_PLATAFORMA;
+        operador = UUID.randomUUID();
         String login = "teste-" + operador;
-        UUID perfil = UUID.randomUUID();
         idPermissaoPlataforma = permissaoDoTeste(AcessoAdministrativo.PLATAFORMA_ADMINISTRAR);
         idPermissaoAplicacao = permissaoDoTeste(AcessoAdministrativo.APLICACAO_ADMINISTRAR);
         jdbc.update("insert into aplicacao (id, nome, slug, tipo, status) values (?, ?, ?, 'PUBLICO', 'ATIVO')",
@@ -95,15 +89,9 @@ class AdministracaoPostgresTest {
         jdbc.update("insert into usuario (id, login, email, senha_hash, status) values (?, ?, ?, ?, 'ATIVO')",
                 operador, login, login + "@example.test", senhas.encode(SENHA));
         usuarios.add(operador);
-        jdbc.update("insert into perfil (id_perfil, id_aplicacao, nome, status) values (?, ?, ?, 'ATIVO')",
-                perfil, ID_PLATAFORMA, "Administrador de teste");
-        jdbc.update("insert into aplicacao_permissao (id_aplicacao, id_permissao) values (?, ?)",
-                ID_PLATAFORMA, idPermissaoPlataforma);
-        jdbc.update("insert into perfil_permissao (id_aplicacao, id_perfil, id_permissao) values (?, ?, ?)",
-                ID_PLATAFORMA, perfil, idPermissaoPlataforma);
         jdbc.update("insert into usuario_aplicacao (id_usuario, id_aplicacao) values (?, ?)", operador, ID_PLATAFORMA);
-        jdbc.update("insert into usuario_perfil (id_usuario, id_aplicacao, id_perfil) values (?, ?, ?)",
-                operador, ID_PLATAFORMA, perfil);
+        jdbc.update("insert into usuario_permissao_plataforma (id_usuario, id_permissao) values (?, ?)",
+                operador, idPermissaoPlataforma);
         tokenPlataforma = login(slugPlataforma, login, SENHA).tokenAcesso();
     }
 
@@ -129,6 +117,7 @@ class AdministracaoPostgresTest {
         }
         for (UUID usuario : usuarios) {
             jdbc.update("delete from auditoria where id_usuario = ?", usuario);
+            jdbc.update("delete from usuario_permissao_plataforma where id_usuario = ?", usuario);
             jdbc.update("delete from usuario where id = ?", usuario);
         }
         permissoes.forEach(id -> jdbc.update("delete from permissao where id = ?", id));
@@ -238,6 +227,105 @@ class AdministracaoPostgresTest {
 
     }
 
+    @Test
+    void atribuiPermissoesDiretasNoCadastroNaEdicaoENaSessao() throws Exception {
+        String visitante = "PLATAFORMA_VISITANTE";
+        String analista = "PLATAFORMA_ANALISTA";
+        String administrador = AcessoAdministrativo.PLATAFORMA_ADMINISTRAR;
+        var catalogo = chamar(HttpMethod.GET, ADMIN + "/permissoes-plataforma", tokenPlataforma, null)
+                .andExpect(status().isOk()).andReturn().getResponse();
+        assertThat(json.readTree(catalogo.getContentAsByteArray()).findValuesAsText("codigo"))
+                .contains(administrador, visitante, analista);
+
+        for (List<String> codigos : List.of(List.<String>of(), List.of(visitante), List.of(analista),
+                List.of(administrador), List.of(administrador, analista, visitante, visitante))) {
+            String login = "teste-" + UUID.randomUUID();
+            String email = login + "@example.test";
+            JsonNode conta = criar(ADMIN + "/usuarios", Map.of("login", login, "email", email,
+                    "senha", SENHA, "permissoesPlataforma", codigos));
+            UUID usuario = id(conta);
+            usuarios.add(usuario);
+            List<String> esperadas = codigos.stream().distinct().sorted().toList();
+            assertThat(codigos(conta.path("permissoesPlataforma"))).containsExactlyElementsOf(esperadas);
+            chamar(HttpMethod.GET, ADMIN + "/usuarios/" + usuario, tokenPlataforma, null)
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.permissoesPlataforma").value(is(esperadas)));
+            if (codigos.isEmpty()) {
+                chamar(HttpMethod.POST, autenticacao(slugPlataforma, "login"), null,
+                        Map.of("login", login, "senha", SENHA)).andExpect(status().isUnauthorized());
+                continue;
+            }
+
+            var sessao = login(slugPlataforma, login, SENHA);
+            chamar(HttpMethod.GET, autenticacao(slugPlataforma, "permissoes"), sessao.tokenAcesso(), null)
+                    .andExpect(status().isOk()).andExpect(content().json(json.writeValueAsString(esperadas), true));
+            chamar(HttpMethod.GET, ADMIN + "/usuarios", sessao.tokenAcesso(), null)
+                    .andExpect(codigos.contains(administrador) ? status().isOk() : status().isForbidden());
+
+            chamar(HttpMethod.PUT, ADMIN + "/usuarios/" + usuario, tokenPlataforma,
+                    Map.of("login", login, "email", email, "status", "ATIVO",
+                            "permissoesPlataforma", List.of(analista, visitante)))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.permissoesPlataforma")
+                            .value(is(List.of(analista, visitante))));
+            var renovar = chamar(HttpMethod.POST, autenticacao(slugPlataforma, "renovar"), null,
+                    Map.of("tokenAtualizacao", sessao.tokenAtualizacao()))
+                    .andExpect(status().isOk()).andReturn().getResponse();
+            var renovada = json.readValue(renovar.getContentAsByteArray(), TokensAutenticacao.class);
+            chamar(HttpMethod.GET, autenticacao(slugPlataforma, "permissoes"), renovada.tokenAcesso(), null)
+                    .andExpect(status().isOk()).andExpect(content().json(json.writeValueAsString(
+                            List.of(analista, visitante)), true));
+            chamar(HttpMethod.GET, ADMIN + "/usuarios", sessao.tokenAcesso(), null)
+                    .andExpect(status().isForbidden());
+
+            chamar(HttpMethod.PUT, ADMIN + "/usuarios/" + usuario, tokenPlataforma,
+                    Map.of("login", login, "email", email, "status", "ATIVO"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.permissoesPlataforma")
+                            .value(is(List.of(analista, visitante))));
+            chamar(HttpMethod.PUT, ADMIN + "/usuarios/" + usuario, tokenPlataforma,
+                    Map.of("login", login, "email", email, "status", "ATIVO", "permissoesPlataforma", List.of()))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.permissoesPlataforma").isEmpty());
+            var novaSessao = login(slugPlataforma, login, SENHA);
+            chamar(HttpMethod.GET, autenticacao(slugPlataforma, "permissoes"), novaSessao.tokenAcesso(), null)
+                    .andExpect(status().isOk()).andExpect(content().json("[]", true));
+        }
+
+        var contaOperador = chamar(HttpMethod.GET, ADMIN + "/usuarios/" + operador, tokenPlataforma, null)
+                .andExpect(status().isOk()).andReturn().getResponse();
+        JsonNode dadosOperador = json.readTree(contaOperador.getContentAsByteArray());
+        chamar(HttpMethod.PUT, ADMIN + "/usuarios/" + operador, tokenPlataforma,
+                Map.of("login", dadosOperador.path("login").asText(), "email", dadosOperador.path("email").asText(),
+                        "status", "ATIVO", "permissoesPlataforma", List.of(visitante)))
+                .andExpect(status().isConflict());
+
+        String loginInvalido = "teste-" + UUID.randomUUID();
+        chamar(HttpMethod.POST, ADMIN + "/usuarios", tokenPlataforma,
+                Map.of("login", loginInvalido, "email", loginInvalido + "@example.test",
+                        "senha", SENHA, "permissoesPlataforma", List.of(AcessoAdministrativo.APLICACAO_ADMINISTRAR)))
+                .andExpect(status().isBadRequest());
+        chamar(HttpMethod.GET, ADMIN + "/usuarios?login=" + loginInvalido, tokenPlataforma, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+    }
+
+    @Test
+    void disponibilizaNovaPermissaoNoCatalogoSemAlterarFormulario() throws Exception {
+        String codigo = "PLATAFORMA_TESTE_" + UUID.randomUUID().toString().replace("-", "").toUpperCase(java.util.Locale.ROOT);
+        UUID permissao = id(criar(ADMIN + "/permissoes-plataforma", Map.of("codigo", codigo, "nome", "Acesso de teste")));
+        permissoes.add(permissao);
+        var resposta = chamar(HttpMethod.GET, ADMIN + "/permissoes-plataforma", tokenPlataforma, null)
+                .andExpect(status().isOk()).andReturn().getResponse();
+        assertThat(json.readTree(resposta.getContentAsByteArray()).findValuesAsText("codigo")).contains(codigo);
+        String login = "teste-" + UUID.randomUUID();
+        var conta = criar(ADMIN + "/usuarios", Map.of("login", login, "email", login + "@example.test",
+                "senha", SENHA, "permissoesPlataforma", List.of(codigo)));
+        usuarios.add(id(conta));
+        assertThat(codigos(conta.path("permissoesPlataforma"))).containsExactly(codigo);
+    }
+
+    private static List<String> codigos(JsonNode no) {
+        var codigos = new ArrayList<String>();
+        no.forEach(codigo -> codigos.add(codigo.asText()));
+        return codigos;
+    }
+
     private UUID permissaoDoTeste(String codigo) {
         var existentes = jdbc.query("select id from permissao where codigo = ?",
                 (linha, indice) -> linha.getObject("id", UUID.class), codigo);
@@ -256,7 +344,7 @@ class AdministracaoPostgresTest {
         return id;
     }
 
-    private JsonNode criar(String rota, Map<String, String> dados) throws Exception {
+    private JsonNode criar(String rota, Map<String, ?> dados) throws Exception {
         var resposta = chamar(HttpMethod.POST, rota, tokenPlataforma, dados)
                 .andExpect(status().isCreated()).andReturn().getResponse();
         return json.readTree(resposta.getContentAsByteArray());
@@ -280,11 +368,11 @@ class AdministracaoPostgresTest {
         semConteudo(metodo, rota, null);
     }
 
-    private void semConteudo(HttpMethod metodo, String rota, Map<String, String> dados) throws Exception {
+    private void semConteudo(HttpMethod metodo, String rota, Map<String, ?> dados) throws Exception {
         chamar(metodo, rota, tokenPlataforma, dados).andExpect(status().isNoContent());
     }
 
-    private ResultActions chamar(HttpMethod metodo, String rota, String token, Map<String, String> dados)
+    private ResultActions chamar(HttpMethod metodo, String rota, String token, Map<String, ?> dados)
             throws Exception {
         var requisicao = request(metodo, rota);
         if (token != null) {

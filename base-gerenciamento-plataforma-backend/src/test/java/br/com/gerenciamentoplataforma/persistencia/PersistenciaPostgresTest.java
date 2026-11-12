@@ -49,8 +49,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(showSql = false, properties = {
         "spring.liquibase.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.jpa.properties.hibernate.default_schema=public"
+        "spring.jpa.hibernate.ddl-auto=validate"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @EnabledIfEnvironmentVariable(named = "TESTE_PERSISTENCIA_POSTGRES", matches = "true")
@@ -58,10 +57,7 @@ class PersistenciaPostgresTest {
 
     @DynamicPropertySource
     static void configurarConexao(DynamicPropertyRegistry propriedades) {
-        propriedades.add("spring.datasource.url",
-                () -> "jdbc:postgresql://127.0.0.1:5432/gerenciamento_usuarios");
-        propriedades.add("spring.datasource.username", () -> System.getenv("DATABASE_USERNAME"));
-        propriedades.add("spring.datasource.password", () -> System.getenv().getOrDefault("DATABASE_PASSWORD", ""));
+        ConexaoPostgresTeste.configurar(propriedades);
     }
 
     @Autowired

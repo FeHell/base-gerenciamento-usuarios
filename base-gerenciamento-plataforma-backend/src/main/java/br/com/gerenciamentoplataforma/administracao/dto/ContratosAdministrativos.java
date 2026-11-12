@@ -47,9 +47,10 @@ public final class ContratosAdministrativos {
     public record NovoUsuario(@NotBlank @Size(max = 50) String login,
                               @NotBlank @Email @Size(max = 255) String email,
                               @NotBlank @Size(min = 12, max = 72)
-                              @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String senha, StatusUsuario status) {
+                              @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String senha, StatusUsuario status,
+                              List<@NotBlank @Size(max = 100) String> permissoesPlataforma) {
         public NovoUsuario(String login, String email, String senha) {
-            this(login, email, senha, StatusUsuario.ATIVO);
+            this(login, email, senha, StatusUsuario.ATIVO, null);
         }
 
         @Override
@@ -60,7 +61,8 @@ public final class ContratosAdministrativos {
 
     public record AtualizarUsuario(@NotBlank @Size(max = 50) String login,
                                    @NotBlank @Email @Size(max = 255) String email,
-                                   @NotNull StatusUsuario status) {
+                                   @NotNull StatusUsuario status,
+                                   List<@NotBlank @Size(max = 100) String> permissoesPlataforma) {
     }
 
     public record NovaSenha(@NotBlank @Size(min = 12, max = 72)
@@ -74,6 +76,18 @@ public final class ContratosAdministrativos {
     public record NovaPermissao(@NotBlank @Size(max = 100)
                                 @Pattern(regexp = "[A-Z][A-Z0-9_]*") String codigo,
                                 @Size(max = 2000) String descricao) {
+    }
+
+    public record NovaPermissaoPlataforma(
+            @NotBlank @Size(max = 100) @Pattern(regexp = "PLATAFORMA_[A-Z0-9][A-Z0-9_]*") String codigo,
+            @NotBlank @Size(max = 100) String nome, @Size(max = 2000) String descricao) {
+    }
+
+    public record PermissaoPlataformaInfo(UUID id, String codigo, String nome, String descricao, StatusCadastro status) {
+        public static PermissaoPlataformaInfo de(Permissao permissao) {
+            return new PermissaoPlataformaInfo(permissao.getId(), permissao.getCodigo(), permissao.getNomePlataforma(),
+                    permissao.getDescricao(), permissao.getStatus());
+        }
     }
 
     public record AtualizarPermissao(@Size(max = 2000) String descricao, @NotNull StatusCadastro status) {
@@ -94,9 +108,11 @@ public final class ContratosAdministrativos {
         }
     }
 
-    public record UsuarioInfo(UUID id, String login, String email, StatusUsuario status, Instant dataCriacao) {
-        public static UsuarioInfo de(Usuario u) {
-            return new UsuarioInfo(u.getId(), u.getLogin(), u.getEmail(), u.getStatus(), u.getDataCriacao());
+    public record UsuarioInfo(UUID id, String login, String email, StatusUsuario status, Instant dataCriacao,
+                              List<String> permissoesPlataforma) {
+        public static UsuarioInfo de(Usuario u, List<String> permissoesPlataforma) {
+            return new UsuarioInfo(u.getId(), u.getLogin(), u.getEmail(), u.getStatus(), u.getDataCriacao(),
+                    permissoesPlataforma);
         }
     }
 
@@ -106,10 +122,11 @@ public final class ContratosAdministrativos {
     }
 
     public record UsuarioListagem(UUID id, String login, String email, StatusUsuario status, Instant dataCriacao,
-                                  TipoAcessoUsuario tipo, List<PermissaoUsuario> permissoes) {
-        public static UsuarioListagem de(Usuario u, TipoAcessoUsuario tipo, List<PermissaoUsuario> permissoes) {
+                                  TipoAcessoUsuario tipo, List<PermissaoUsuario> permissoes, List<String> permissoesPlataforma) {
+        public static UsuarioListagem de(Usuario u, TipoAcessoUsuario tipo, List<PermissaoUsuario> permissoes,
+                                         List<String> permissoesPlataforma) {
             return new UsuarioListagem(u.getId(), u.getLogin(), u.getEmail(), u.getStatus(), u.getDataCriacao(),
-                    tipo, permissoes);
+                    tipo, permissoes, permissoesPlataforma);
         }
     }
 

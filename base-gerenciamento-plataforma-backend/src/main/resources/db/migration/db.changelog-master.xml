@@ -19,4 +19,5 @@
     <include file="sessao/db.changelog-master.xml" relativeToChangelogFile="true"/>
     <include file="tokens_atualizacao/db.changelog-master.xml" relativeToChangelogFile="true"/>
     <include file="auditoria/db.changelog-master.xml" relativeToChangelogFile="true"/>
+    <include file="permissao/plataforma.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

@@ -1,11 +1,16 @@
 package br.com.gerenciamentoplataforma.autorizacao.service;
 
+import br.com.gerenciamentoplataforma.administracao.service.AcessoAdministrativo;
 import br.com.gerenciamentoplataforma.autenticacao.exception.AutenticacaoNegadaException;
 import br.com.gerenciamentoplataforma.autenticacao.service.AutenticacaoService;
 import br.com.gerenciamentoplataforma.autenticacao.service.IdentidadeJwt;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioPerfilRepository;
+import br.com.gerenciamentoplataforma.usuario.repository.UsuarioPermissaoPlataformaRepository;
 
 import java.util.List;
+import java.util.UUID;
+
+import org.springframework.core.env.Environment;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -17,9 +22,15 @@ public class AutorizacaoService {
     private final AutenticacaoService autenticacao;
     private final UsuarioPerfilRepository perfis;
 
-    public AutorizacaoService(AutenticacaoService autenticacao, UsuarioPerfilRepository perfis) {
+    private final UsuarioPermissaoPlataformaRepository permissoesPlataforma;
+    private final UUID idAplicacaoPlataforma;
+
+    public AutorizacaoService(AutenticacaoService autenticacao, UsuarioPerfilRepository perfis,
+                              UsuarioPermissaoPlataformaRepository permissoesPlataforma, Environment ambiente) {
         this.autenticacao = autenticacao;
         this.perfis = perfis;
+        this.permissoesPlataforma = permissoesPlataforma;
+        this.idAplicacaoPlataforma = ambiente.getProperty(AcessoAdministrativo.PROPRIEDADE_APLICACAO, UUID.class);
     }
 
     @Transactional(readOnly = true)
@@ -46,6 +57,9 @@ public class AutorizacaoService {
             throw new AutenticacaoNegadaException();
         }
         var usuario = autenticacao.consultarUsuario(slug, identidade);
+        if (AcessoAdministrativo.SLUG_PLATAFORMA.equals(slug) || usuario.idAplicacao().equals(idAplicacaoPlataforma)) {
+            return permissoesPlataforma.listarCodigosAtivos(usuario.id());
+        }
         return perfis.buscarPermissoesEfetivas(usuario.id(), usuario.idAplicacao());
     }
 }

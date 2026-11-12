@@ -8,6 +8,7 @@ import type {
   Pagina,
   PerfilAcesso,
   PermissaoAcesso,
+  PermissaoPlataforma,
   Usuario,
   UsuarioListagem,
 } from '../contratos'
@@ -55,6 +56,9 @@ export function useUsuariosApi() {
     },
     dashboard(meses: number) {
       return requisitar<DashboardUsuarios>(`${base}/dashboard?meses=${meses}`)
+    },
+    listarPermissoesPlataforma() {
+      return requisitar<PermissaoPlataforma[]>('/admin/permissoes-plataforma')
     },
     listarAplicacoes() {
       return listarTodas<AplicacaoAcesso>('/admin/aplicacoes')

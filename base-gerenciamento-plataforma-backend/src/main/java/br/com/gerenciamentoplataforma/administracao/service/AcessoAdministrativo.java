@@ -16,6 +16,7 @@ public class AcessoAdministrativo {
 
     public static final String PLATAFORMA_ADMINISTRAR = "PLATAFORMA_ADMINISTRAR";
     public static final String APLICACAO_ADMINISTRAR = "APLICACAO_ADMINISTRAR";
+    public static final String SLUG_PLATAFORMA = "plataforma-admin";
     public static final String PROPRIEDADE_APLICACAO = "plataforma.administracao.aplicacao-id";
 
     private final AutorizacaoService autorizacao;

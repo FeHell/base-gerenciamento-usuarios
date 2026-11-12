@@ -42,10 +42,7 @@ async function carregar() {
 watch(
   id,
   () => {
-    aviso.value =
-      window.history.state?.usuarioCriado === true
-        ? 'Usuário criado. Você já pode atribuir perfis.'
-        : ''
+    aviso.value = window.history.state?.usuarioCriado === true ? 'Usuário criado.' : ''
     void carregar()
   },
   { immediate: true },
@@ -65,8 +62,25 @@ async function salvo(dados: Usuario) {
     })
     return
   }
+  const permissoesAnteriores = usuario.value?.permissoesPlataforma ?? []
+  const contaPropria = dados.id === autenticacao.usuario?.id
   if (usuario.value) usuario.value = { ...usuario.value, ...dados }
   aviso.value = 'Usuário atualizado.'
+  if (
+    contaPropria &&
+    [...permissoesAnteriores].sort().join(',') !== [...dados.permissoesPlataforma].sort().join(',')
+  ) {
+    try {
+      await autenticacao.renovarSessao()
+    } catch {
+      await router.replace({ name: 'login' })
+      return
+    }
+    if (!autenticacao.temPermissao('PLATAFORMA_ADMINISTRAR')) {
+      await router.replace({ name: 'inicio' })
+      return
+    }
+  }
   await atualizarPermissoes()
 }
 
@@ -89,7 +103,7 @@ async function atualizarPermissoes() {
     :titulo="id ? 'Editar usuário' : 'Novo usuário'"
     :descricao="
       id
-        ? 'Atualize os dados e os perfis de acesso do usuário.'
+        ? 'Atualize os dados e as permissões do usuário.'
         : 'Preencha os dados para criar uma conta.'
     "
   >
@@ -115,13 +129,6 @@ async function atualizarPermissoes() {
       :usuario="usuario"
       @alterado="atualizarPermissoes"
     />
-    <section v-else class="estado">
-      <h2>Permissões</h2>
-      <p>
-        Após salvar o usuário, atribua os perfis na edição. As permissões são concedidas pelos
-        perfis de cada aplicação.
-      </p>
-    </section>
   </div>
 </template>
 
@@ -139,9 +146,6 @@ async function atualizarPermissoes() {
   border-radius: var(--raio-md);
   background: var(--cor-superficie);
   box-shadow: var(--sombra-card);
-}
-.estado h2 {
-  font-size: var(--fonte-lg);
 }
 .estado p {
   color: var(--cor-texto-secundario);

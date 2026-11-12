@@ -8,9 +8,11 @@ import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.DashboardUsuarios;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovaAplicacao;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovaPermissao;
+import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovaPermissaoPlataforma;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.NovoUsuario;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.Pagina;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.PermissaoInfo;
+import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.PermissaoPlataformaInfo;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.PermissaoUsuario;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.TipoAcessoUsuario;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.TotalUsuariosMes;
@@ -35,20 +37,24 @@ import br.com.gerenciamentoplataforma.sessao.service.RevogacaoSessaoService;
 import br.com.gerenciamentoplataforma.usuario.entity.StatusUsuario;
 import br.com.gerenciamentoplataforma.usuario.entity.Usuario;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioRepository;
+import br.com.gerenciamentoplataforma.usuario.repository.UsuarioPermissaoPlataformaRepository;
 
 import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +69,8 @@ public class AdministracaoPlataformaService {
     private final UsuarioRepository usuarios;
     private final ConsultaUsuariosRepository consultaUsuarios;
     private final PermissaoRepository permissoes;
+    private final UsuarioPermissaoPlataformaRepository atribuicoes;
+    private final PermissoesPlataformaService permissoesPlataforma;
     private final AplicacaoPermissaoRepository habilitacoes;
     private final PerfilPermissaoRepository permissoesPerfil;
     private final AuditoriaRepository auditoria;
@@ -73,7 +81,9 @@ public class AdministracaoPlataformaService {
 
     public AdministracaoPlataformaService(AplicacaoRepository aplicacoes, UsuarioRepository usuarios,
                                           ConsultaUsuariosRepository consultaUsuarios,
-                                          PermissaoRepository permissoes, AplicacaoPermissaoRepository habilitacoes,
+                                          PermissaoRepository permissoes, UsuarioPermissaoPlataformaRepository atribuicoes,
+                                          PermissoesPlataformaService permissoesPlataforma,
+                                          AplicacaoPermissaoRepository habilitacoes,
                                           PerfilPermissaoRepository permissoesPerfil, AuditoriaRepository auditoria,
                                           RegistroAdministrativo registro, AcessoAdministrativo acesso,
                                           SenhasAdministrativas senhas, RevogacaoSessaoService revogacao) {
@@ -81,6 +91,8 @@ public class AdministracaoPlataformaService {
         this.usuarios = usuarios;
         this.consultaUsuarios = consultaUsuarios;
         this.permissoes = permissoes;
+        this.atribuicoes = atribuicoes;
+        this.permissoesPlataforma = permissoesPlataforma;
         this.habilitacoes = habilitacoes;
         this.permissoesPerfil = permissoesPerfil;
         this.auditoria = auditoria;
@@ -125,16 +137,28 @@ public class AdministracaoPlataformaService {
         var encontrados = consultaUsuarios.pesquisar(login.strip(), email.strip(), status,
                 tipo == null ? null : tipo.name(), administracao, AcessoAdministrativo.PLATAFORMA_ADMINISTRAR,
                 AcessoAdministrativo.APLICACAO_ADMINISTRAR, Pagina.requisicao(pagina, tamanho, Sort.by("login")));
-        var permissoesEncontradas = encontrados.isEmpty() ? List.<PermissaoDoUsuario>of()
-                : consultaUsuarios.permissoes(encontrados.stream().map(Usuario::getId).toList());
-        var porUsuario = permissoesEncontradas.stream()
+        if (encontrados.isEmpty()) {
+            return new Pagina<>(List.of(), encontrados.getNumber(), encontrados.getSize(), encontrados.getTotalElements());
+        }
+        var ids = encontrados.stream().map(Usuario::getId).toList();
+        var porUsuario = permissoesEfetivas(administracao, ids)
                 .collect(Collectors.groupingBy(PermissaoDoUsuario::getIdUsuario));
-        return Pagina.de(encontrados.map(u -> comAcessos(u, administracao, porUsuario.getOrDefault(u.getId(), List.of()))));
+        var atribuicoesPorUsuario = atribuicoes.listarAtribuicoes(ids).stream()
+                .collect(Collectors.groupingBy(UsuarioPermissaoPlataformaRepository.Atribuicao::getIdUsuario,
+                        Collectors.mapping(UsuarioPermissaoPlataformaRepository.Atribuicao::getCodigo, Collectors.toList())));
+        return Pagina.de(encontrados.map(u -> comAcessos(u, administracao,
+                porUsuario.getOrDefault(u.getId(), List.of()), atribuicoesPorUsuario.getOrDefault(u.getId(), List.of()))));
     }
 
-    private static UsuarioListagem comAcessos(Usuario usuario, UUID administracao, List<PermissaoDoUsuario> permissoes) {
+    private Stream<PermissaoDoUsuario> permissoesEfetivas(UUID administracao, List<UUID> usuarios) {
+        return Stream.concat(consultaUsuarios.permissoesDaPlataforma(administracao, usuarios).stream(),
+                consultaUsuarios.permissoes(administracao, usuarios).stream());
+    }
+
+    private static UsuarioListagem comAcessos(Usuario usuario, UUID administracao, List<PermissaoDoUsuario> permissoes,
+                                             List<String> atribuicoes) {
         return UsuarioListagem.de(usuario, tipoAcesso(administracao, permissoes), permissoes.stream()
-                .map(p -> new PermissaoUsuario(p.getAplicacao(), p.getCodigo())).toList());
+                .map(p -> new PermissaoUsuario(p.getAplicacao(), p.getCodigo())).toList(), atribuicoes);
     }
 
     private static TipoAcessoUsuario tipoAcesso(UUID administracao, List<PermissaoDoUsuario> permissoesAtivas) {
@@ -175,8 +199,13 @@ public class AdministracaoPlataformaService {
                 .map(s -> new TotalUsuariosStatus(s, status.getOrDefault(s, 0L))).toList();
         var porTipo = Arrays.stream(TipoAcessoUsuario.values())
                 .map(t -> new TotalUsuariosTipo(t, tipos.getOrDefault(t, 0L))).toList();
-        var porPermissao = consultaUsuarios.contarPorPermissao(inicio, agora).stream()
-                .map(p -> new TotalUsuariosPermissao(p.getAplicacao(), p.getCodigo(), p.getTotal())).toList();
+        UUID administracao = acesso.idAplicacaoPlataforma();
+        var porPermissao = Stream.concat(consultaUsuarios.contarPorPermissao(administracao, inicio, agora).stream(),
+                        consultaUsuarios.contarPorPermissaoDaPlataforma(administracao, inicio, agora).stream())
+                .map(p -> new TotalUsuariosPermissao(p.getAplicacao(), p.getCodigo(), p.getTotal()))
+                .sorted(Comparator.comparingLong(TotalUsuariosPermissao::total).reversed()
+                        .thenComparing(TotalUsuariosPermissao::aplicacao).thenComparing(TotalUsuariosPermissao::codigo))
+                .toList();
         var porMes = IntStream.range(0, mesesDaSerie).mapToObj(i -> inicioSerie.plusMonths(i).toString())
                 .map(m -> new TotalUsuariosMes(m, contagemMeses.getOrDefault(m, 0L))).toList();
         return new DashboardUsuarios(porStatus.stream().mapToLong(TotalUsuariosStatus::total).sum(),
@@ -185,40 +214,52 @@ public class AdministracaoPlataformaService {
 
     public UsuarioListagem consultarUsuario(UUID id) {
         Usuario usuario = usuarios.findById(id).orElseThrow(() -> naoEncontrado("Usuário"));
-        return comAcessos(usuario, acesso.idAplicacaoPlataforma(), consultaUsuarios.permissoes(List.of(id)));
+        UUID administracao = acesso.idAplicacaoPlataforma();
+        return comAcessos(usuario, administracao, permissoesEfetivas(administracao, List.of(id)).toList(),
+                permissoesPlataforma.consultar(id));
     }
 
     @Transactional
     public UsuarioInfo criarUsuario(NovoUsuario dados) {
         StatusUsuario status = dados.status() == null ? StatusUsuario.ATIVO : dados.status();
-        var usuario = usuarios.saveAndFlush(new Usuario(dados.login().strip(), senhas.gerarHash(dados.senha()),
-                dados.email().strip(), status));
+        String hash = senhas.gerarHash(dados.senha());
+        UUID administracao = bloquearAlteracoesDeUsuarios();
+        var usuario = usuarios.saveAndFlush(new Usuario(dados.login().strip(), hash, dados.email().strip(), status));
         registro.registrar("CRIAR_USUARIO", "usuario", null, usuario.getId());
-        return UsuarioInfo.de(usuario);
+        var codigos = dados.permissoesPlataforma() == null ? List.<String>of() : dados.permissoesPlataforma();
+        return UsuarioInfo.de(usuario, permissoesPlataforma.substituir(usuario.getId(), administracao, codigos));
     }
 
     @Transactional
     public UsuarioInfo atualizarUsuario(UUID id, AtualizarUsuario dados) {
+        UUID administracao = bloquearAlteracoesDeUsuarios();
         if (id.equals(registro.idOperador()) && dados.status() != StatusUsuario.ATIVO) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "O administrador deve manter a própria conta ativa.");
         }
         Usuario usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
         boolean desativou = usuario.getStatus() == StatusUsuario.ATIVO && dados.status() != StatusUsuario.ATIVO;
+        var atuais = permissoesPlataforma.consultar(id);
+        var desejadas = dados.permissoesPlataforma();
+        verificarUltimoAdministrador(usuario, dados.status(), atuais, desejadas == null ? atuais : desejadas);
         usuario.atualizar(dados.login().strip(), dados.email().strip(), dados.status());
+        var codigos = desejadas == null ? atuais : permissoesPlataforma.substituir(id, administracao, desejadas);
         if (desativou) {
             revogacao.revogarDoUsuario(id);
         }
         registro.registrar("ATUALIZAR_USUARIO", "usuario", null, id);
-        return UsuarioInfo.de(usuario);
+        return UsuarioInfo.de(usuario, codigos);
     }
 
     @Transactional
     public void desativarUsuario(UUID id) {
+        bloquearAlteracoesDeUsuarios();
         if (id.equals(registro.idOperador())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "O administrador deve manter a própria conta ativa.");
         }
         Usuario usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
         if (usuario.getStatus() == StatusUsuario.INATIVO) return;
+        var atuais = permissoesPlataforma.consultar(id);
+        verificarUltimoAdministrador(usuario, StatusUsuario.INATIVO, atuais, atuais);
         usuario.atualizar(usuario.getLogin(), usuario.getEmail(), StatusUsuario.INATIVO);
         revogacao.revogarDoUsuario(id);
         registro.registrar("DESATIVAR_USUARIO", "usuario", null, id);
@@ -231,6 +272,19 @@ public class AdministracaoPlataformaService {
         usuario.alterarSenhaHash(hash);
         revogacao.revogarDoUsuario(id);
         registro.registrar("ALTERAR_SENHA", "usuario", null, id);
+    }
+
+    public List<PermissaoPlataformaInfo> listarPermissoesPlataforma() {
+        return permissoes.findByNomePlataformaIsNotNullOrderByNomePlataformaAscCodigoAsc().stream()
+                .map(PermissaoPlataformaInfo::de).toList();
+    }
+
+    @Transactional
+    public PermissaoPlataformaInfo criarPermissaoPlataforma(NovaPermissaoPlataforma dados) {
+        var permissao = permissoes.saveAndFlush(Permissao.daPlataforma(dados.codigo(), dados.nome().strip(),
+                dados.descricao()));
+        registro.registrar("CRIAR_PERMISSAO_PLATAFORMA", "permissao", null, permissao.getId());
+        return PermissaoPlataformaInfo.de(permissao);
     }
 
     public Pagina<PermissaoInfo> listarPermissoes(int pagina, int tamanho) {
@@ -268,8 +322,7 @@ public class AdministracaoPlataformaService {
     public void habilitarPermissao(UUID idAplicacao, UUID idPermissao) {
         bloquearAplicacaoEditavel(idAplicacao);
         Permissao permissao = permissoes.findById(idPermissao).orElseThrow(() -> naoEncontrado("Permissão"));
-        if (AcessoAdministrativo.PLATAFORMA_ADMINISTRAR.equals(permissao.getCodigo())
-                || permissao.getStatus() != StatusCadastro.ATIVO) {
+        if (permissao.getNomePlataforma() != null || permissao.getStatus() != StatusCadastro.ATIVO) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A permissão está indisponível para habilitação.");
         }
         var id = new AplicacaoPermissaoId(idAplicacao, idPermissao);
@@ -293,6 +346,26 @@ public class AdministracaoPlataformaService {
     public Pagina<AuditoriaInfo> listarAuditoria(int pagina, int tamanho) {
         return Pagina.de(auditoria.findAll(Pagina.requisicao(pagina, tamanho, Sort.by(Sort.Direction.DESC, "id")))
                 .map(AuditoriaInfo::de));
+    }
+
+    private UUID bloquearAlteracoesDeUsuarios() {
+        UUID id = acesso.idAplicacaoPlataforma();
+        aplicacoes.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Aplicação administrativa"));
+        if (!acesso.plataforma(SecurityContextHolder.getContext().getAuthentication())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A administração da plataforma exige acesso ativo.");
+        }
+        return id;
+    }
+
+    private void verificarUltimoAdministrador(Usuario usuario, StatusUsuario status,
+                                              List<String> atuais, List<String> desejadas) {
+        String administrador = AcessoAdministrativo.PLATAFORMA_ADMINISTRAR;
+        if (usuario.getStatus() == StatusUsuario.ATIVO && atuais.contains(administrador)
+                && (status != StatusUsuario.ATIVO || !desejadas.contains(administrador))
+                && consultaUsuarios.contarOutrosAdministradores(acesso.idAplicacaoPlataforma(), administrador,
+                        usuario.getId()) == 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A plataforma deve manter um administrador ativo.");
+        }
     }
 
     private Aplicacao bloquearAplicacaoEditavel(UUID id) {

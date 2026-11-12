@@ -20,6 +20,7 @@ export interface Usuario {
   email: string
   status: StatusUsuario
   dataCriacao: string
+  permissoesPlataforma: string[]
 }
 
 export interface UsuarioListagem extends Usuario {
@@ -55,9 +56,10 @@ export interface NovoUsuario {
   email: string
   senha: string
   status: StatusUsuario
+  permissoesPlataforma: string[]
 }
 
-export type AtualizarUsuario = Pick<Usuario, 'login' | 'email' | 'status'>
+export type AtualizarUsuario = Pick<Usuario, 'login' | 'email' | 'status' | 'permissoesPlataforma'>
 
 export const opcoesStatus = (Object.keys(rotulosStatus) as StatusUsuario[]).map((valor) => ({
   valor,
@@ -88,4 +90,8 @@ export interface PermissaoAcesso {
   codigo: string
   descricao: string | null
   status: 'ATIVO' | 'INATIVO'
+}
+
+export interface PermissaoPlataforma extends PermissaoAcesso {
+  nome: string
 }

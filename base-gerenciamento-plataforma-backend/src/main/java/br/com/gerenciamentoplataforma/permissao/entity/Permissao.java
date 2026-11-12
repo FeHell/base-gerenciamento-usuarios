@@ -27,6 +27,9 @@ public class Permissao {
     @Column(name = "descricao", columnDefinition = "text")
     private String descricao;
 
+    @Column(name = "nome_plataforma", length = 100)
+    private String nomePlataforma;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
     private StatusCadastro status;
@@ -38,6 +41,16 @@ public class Permissao {
         this.codigo = Objects.requireNonNull(codigo, "codigo");
         this.descricao = descricao;
         this.status = Objects.requireNonNull(status, "status");
+    }
+
+    public static Permissao daPlataforma(String codigo, String nome, String descricao) {
+        var permissao = new Permissao(codigo, descricao, StatusCadastro.ATIVO);
+        permissao.nomePlataforma = Objects.requireNonNull(nome, "nome");
+        return permissao;
+    }
+
+    public String getNomePlataforma() {
+        return nomePlataforma;
     }
 
     public UUID getId() {

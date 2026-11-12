@@ -9,6 +9,8 @@ import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacao;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoId;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfil;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfilId;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataforma;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaId;
 
 import jakarta.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
@@ -42,7 +44,7 @@ class MapeamentoPersistenciaTest {
                 .run(contexto -> {
                     assertThat(contexto).hasNotFailed();
                     var metamodelo = contexto.getBean(EntityManagerFactory.class).getMetamodel();
-                    assertThat(metamodelo.getEntities()).hasSize(11);
+                    assertThat(metamodelo.getEntities()).hasSize(12);
                     assertThat(metamodelo.entity(UsuarioAplicacao.class).getIdType().getJavaType())
                             .isEqualTo(UsuarioAplicacaoId.class);
                     assertThat(metamodelo.entity(AplicacaoPermissao.class).getIdType().getJavaType())
@@ -51,6 +53,8 @@ class MapeamentoPersistenciaTest {
                             .isEqualTo(PerfilPermissaoId.class);
                     assertThat(metamodelo.entity(UsuarioPerfil.class).getIdType().getJavaType())
                             .isEqualTo(UsuarioPerfilId.class);
+                    assertThat(metamodelo.entity(UsuarioPermissaoPlataforma.class).getIdType().getJavaType())
+                            .isEqualTo(UsuarioPermissaoPlataformaId.class);
                 });
     }
 

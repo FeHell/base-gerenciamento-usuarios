@@ -62,7 +62,7 @@ Inicie o backend normalmente uma vez para aplicar a migração `2-usuario-aplica
 
 ### Primeiro administrador
 
-No diretório do backend, execute o bloco abaixo para criar a conta e a aplicação reservada `plataforma-admin`. Use uma senha com pelo menos 12 caracteres e até 72 bytes em UTF-8.
+Com as migrações aplicadas, execute o bloco abaixo no diretório do backend para criar a conta e a aplicação reservada `plataforma-admin`. Use uma senha com pelo menos 12 caracteres e até 72 bytes em UTF-8.
 
 ```zsh
 (
@@ -96,6 +96,18 @@ As listagens paginadas usam `pagina` a partir de zero e `tamanho` entre 1 e 100.
 
 Para delegar a administração local, habilite `APLICACAO_ADMINISTRAR` na aplicação, atribua essa permissão a um perfil ativo e atribua o perfil a um usuário vinculado. As mudanças de senha revogam as sessões do usuário. Ao desvincular um usuário, a API revoga suas sessões na aplicação, remove as atribuições de perfil daquele vínculo e preserva o histórico. Reativar o vínculo permite um novo login com os perfis que forem atribuídos novamente.
 
+### Permissões da plataforma
+
+O catálogo reutiliza a tabela `permissao`. O campo `nome_plataforma` identifica as permissões que podem ser atribuídas diretamente pela tabela `usuario_permissao_plataforma`. A migração cadastra `PLATAFORMA_ADMINISTRAR`, `PLATAFORMA_VISITANTE` e `PLATAFORMA_ANALISTA` e copia a concessão administrativa do perfil legado de `plataforma-admin`. As demais aplicações continuam usando seus vínculos e perfis.
+
+- `GET /api/v1/admin/permissoes-plataforma` retorna o catálogo com identificador, código, nome, descrição e status.
+- `POST /api/v1/admin/permissoes-plataforma` registra uma nova opção. Envie `codigo` com prefixo `PLATAFORMA_`, `nome` e, opcionalmente, `descricao`. A tela carrega as opções do catálogo.
+- `POST /api/v1/admin/usuarios` e `PUT /api/v1/admin/usuarios/{id}` recebem e retornam a lista `permissoesPlataforma`. No PUT, omitir o campo preserva as atribuições. Enviar `[]` remove todas as atribuições, respeitando a proteção do último administrador ativo.
+- `GET /api/v1/admin/usuarios/{id}` retorna `permissoesPlataforma` com as atribuições e `permissoes` com os acessos efetivos.
+- `GET /api/v1/aplicacoes/plataforma-admin/autenticacao/permissoes` retorna as permissões diretas ativas da conta autenticada. A primeira atribuição ativa cria o vínculo técnico para login. A remoção das atribuições preserva vínculos existentes.
+
+A classificação de visitante ou analista fica disponível na sessão. A autorização das operações administrativas continua exigindo `PLATAFORMA_ADMINISTRAR`. As concessões de perfis antigos da aplicação reservada permanecem no histórico, e o backend consulta as atribuições diretas para decidir o acesso à plataforma.
+
 ## Testes
 
 Execute `mvn test` para os testes que independem do PostgreSQL. Para validar login, renovação concorrente, logout e autorização por aplicação, cole o bloco abaixo no zsh a partir do diretório do backend. As credenciais da configuração de depuração do Eclipse são específicas daquela execução.
@@ -115,3 +127,5 @@ Execute `mvn test` para os testes que independem do PostgreSQL. Para validar log
 O teste cria registros próprios no schema já migrado e remove-os no encerramento de cada caso. A sequência de auditoria pode avançar.
 
 Com as mesmas credenciais exportadas, rode `TESTE_ADMINISTRACAO_POSTGRES=true mvn -Dtest=AdministracaoPostgresTest test` para validar as APIs administrativas e o isolamento no PostgreSQL. O teste cria seu próprio administrador temporário e remove os registros ao concluir.
+
+Para executar os testes PostgreSQL em um esquema isolado já migrado no banco `gerenciamento_usuarios`, defina `TESTE_POSTGRES_SCHEMA`. O valor padrão é `public`.

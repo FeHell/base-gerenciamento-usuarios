@@ -5,6 +5,7 @@ import BotaoBase from '@/components/ui/BotaoBase.vue'
 import CampoSelecao from '@/components/ui/CampoSelecao.vue'
 import CampoTexto from '@/components/ui/CampoTexto.vue'
 import DialogoBase from '@/components/ui/DialogoBase.vue'
+import SelecaoPermissoesPlataforma from './SelecaoPermissoesPlataforma.vue'
 import { ErroApi } from '@/services/clienteHttp'
 import {
   opcoesStatus,
@@ -22,17 +23,24 @@ const login = ref(props.usuario?.login ?? '')
 const email = ref(props.usuario?.email ?? '')
 const status = ref<StatusUsuario>(props.usuario?.status ?? 'ATIVO')
 const senha = ref('')
+const permissoes = ref([...(props.usuario?.permissoesPlataforma ?? [])])
 const salvando = ref(false)
 const erro = ref('')
 const confirmandoSaida = ref(false)
 let resolverSaida: ((descartar: boolean) => void) | undefined
-const campos = computed(() => ({ login: login.value, email: email.value, status: status.value }))
+const campos = computed(() => ({
+  login: login.value,
+  email: email.value,
+  status: status.value,
+  permissoesPlataforma: [...permissoes.value].sort(),
+}))
 const original = ref(campos.value)
 const alterado = computed(
   () =>
     login.value !== original.value.login ||
     email.value !== original.value.email ||
     status.value !== original.value.status ||
+    campos.value.permissoesPlataforma.join(',') !== original.value.permissoesPlataforma.join(',') ||
     senha.value !== '',
 )
 
@@ -70,7 +78,7 @@ onBeforeRouteUpdate((destino, origem) => destino.params.id === origem.params.id 
 async function salvar() {
   if (salvando.value) return
   erro.value = ''
-  const dados = { login: login.value.trim(), email: email.value.trim(), status: status.value }
+  const dados = { ...campos.value, login: login.value.trim(), email: email.value.trim() }
   if (!dados.login) {
     erro.value = 'Informe o nome de usuário.'
     return
@@ -98,6 +106,7 @@ async function salvar() {
   email.value = usuario.email
   status.value = usuario.status
   senha.value = ''
+  permissoes.value = [...usuario.permissoesPlataforma]
   original.value = campos.value
   emit('salvo', usuario)
 }
@@ -157,6 +166,7 @@ async function salvar() {
         <p>{{ usuario ? rotulosTipo[usuario.tipo] : rotulosTipo.USUARIO }}</p>
       </div>
     </div>
+    <SelecaoPermissoesPlataforma v-model="permissoes" :desabilitada="salvando" />
     <div class="formulario__acoes">
       <BotaoBase variante="discreto" :desabilitado="salvando" @click="emit('cancelar')"
         >Cancelar</BotaoBase

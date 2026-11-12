@@ -37,7 +37,9 @@ export function usePermissoesUsuario(id: string, aoAlterar: () => void) {
     carregandoAplicacoes.value = true
     erroAplicacoes.value = ''
     try {
-      aplicacoes.value = await api.listarAplicacoes()
+      aplicacoes.value = (await api.listarAplicacoes()).filter(
+        (app) => app.id !== autenticacao.usuario?.idAplicacao && app.slug !== 'plataforma-admin',
+      )
     } catch (falha) {
       erroAplicacoes.value =
         falha instanceof ErroApi ? falha.message : 'Não foi possível listar as aplicações.'
