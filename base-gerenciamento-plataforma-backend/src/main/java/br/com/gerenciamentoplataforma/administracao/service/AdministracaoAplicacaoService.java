@@ -8,23 +8,23 @@ import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.PermissaoInfo;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.SessaoInfo;
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.VinculoInfo;
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
 import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissaoId;
 import br.com.gerenciamentoplataforma.aplicacao.repository.AplicacaoPermissaoRepository;
 import br.com.gerenciamentoplataforma.aplicacao.repository.AplicacaoRepository;
 import br.com.gerenciamentoplataforma.auditoria.repository.AuditoriaRepository;
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
-import br.com.gerenciamentoplataforma.perfil.entity.Perfil;
-import br.com.gerenciamentoplataforma.perfil.entity.PerfilPermissao;
+import br.com.gerenciamentoplataforma.perfil.entity.PerfilEntity;
+import br.com.gerenciamentoplataforma.perfil.entity.PerfilPermissaoEntity;
 import br.com.gerenciamentoplataforma.perfil.entity.PerfilPermissaoId;
 import br.com.gerenciamentoplataforma.perfil.repository.PerfilPermissaoRepository;
 import br.com.gerenciamentoplataforma.perfil.repository.PerfilRepository;
 import br.com.gerenciamentoplataforma.sessao.entity.StatusSessao;
 import br.com.gerenciamentoplataforma.sessao.repository.SessaoRepository;
 import br.com.gerenciamentoplataforma.sessao.service.RevogacaoSessaoService;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacao;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoId;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfil;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfilEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfilId;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioAplicacaoRepository;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioPerfilRepository;
@@ -94,7 +94,7 @@ public class AdministracaoAplicacaoService {
     @Transactional
     public PerfilInfo criarPerfil(String slug, NovoPerfil dados) {
         UUID aplicacao = bloquearAplicacaoEditavel(slug);
-        var perfil = perfis.saveAndFlush(new Perfil(aplicacao, dados.nome().strip(), dados.descricao(),
+        var perfil = perfis.saveAndFlush(new PerfilEntity(aplicacao, dados.nome().strip(), dados.descricao(),
                 StatusCadastro.ATIVO));
         registro.registrar("CRIAR_PERFIL", "perfil", aplicacao, perfil.getId());
         return PerfilInfo.de(perfil);
@@ -103,7 +103,7 @@ public class AdministracaoAplicacaoService {
     @Transactional
     public PerfilInfo atualizarPerfil(String slug, UUID idPerfil, AtualizarPerfil dados) {
         UUID aplicacao = bloquearAplicacaoEditavel(slug);
-        Perfil perfil = perfil(aplicacao, idPerfil);
+        PerfilEntity perfil = perfil(aplicacao, idPerfil);
         perfil.atualizar(dados.nome().strip(), dados.descricao(), dados.status());
         registro.registrar("ATUALIZAR_PERFIL", "perfil", aplicacao, idPerfil);
         return PerfilInfo.de(perfil);
@@ -124,7 +124,7 @@ public class AdministracaoAplicacaoService {
     @Transactional
     public void atribuirPermissaoAoPerfil(String slug, UUID idPerfil, UUID idPermissao) {
         UUID aplicacao = bloquearAplicacaoEditavel(slug);
-        Perfil perfil = perfil(aplicacao, idPerfil);
+        PerfilEntity perfil = perfil(aplicacao, idPerfil);
         var habilitacao = habilitacoes.findById(new AplicacaoPermissaoId(aplicacao, idPermissao))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
                         "A permissão precisa estar habilitada na aplicação."));
@@ -134,7 +134,7 @@ public class AdministracaoAplicacaoService {
         }
         var id = new PerfilPermissaoId(aplicacao, idPerfil, idPermissao);
         if (!permissoesPerfil.existsById(id)) {
-            permissoesPerfil.save(new PerfilPermissao(id));
+            permissoesPerfil.save(new PerfilPermissaoEntity(id));
             registro.registrar("ATRIBUIR_PERMISSAO_PERFIL", "perfil_permissao", aplicacao, idPerfil, idPermissao);
         }
     }
@@ -165,7 +165,7 @@ public class AdministracaoAplicacaoService {
         var id = new UsuarioAplicacaoId(idUsuario, aplicacao);
         var vinculo = vinculos.findById(id).orElse(null);
         if (vinculo == null) {
-            vinculos.save(new UsuarioAplicacao(id));
+            vinculos.save(new UsuarioAplicacaoEntity(id));
         } else if (!vinculo.isAtivo()) {
             vinculo.definirAtivo(true);
         } else {
@@ -202,7 +202,7 @@ public class AdministracaoAplicacaoService {
         }
         var id = new UsuarioPerfilId(idUsuario, aplicacao, idPerfil);
         if (!atribuicoes.existsById(id)) {
-            atribuicoes.save(new UsuarioPerfil(id));
+            atribuicoes.save(new UsuarioPerfilEntity(id));
             registro.registrar("ATRIBUIR_PERFIL_USUARIO", "usuario_perfil", aplicacao, idUsuario, idPerfil);
         }
     }
@@ -241,7 +241,7 @@ public class AdministracaoAplicacaoService {
                 Pagina.requisicao(pagina, tamanho, Sort.by(Sort.Direction.DESC, "id"))).map(AuditoriaInfo::de));
     }
 
-    private Aplicacao consultarAplicacao(String slug) {
+    private AplicacaoEntity consultarAplicacao(String slug) {
         return aplicacoes.findBySlug(slug).orElseThrow(() -> naoEncontrado("Aplicação"));
     }
 
@@ -251,7 +251,7 @@ public class AdministracaoAplicacaoService {
         return aplicacao;
     }
 
-    private Perfil perfil(UUID aplicacao, UUID idPerfil) {
+    private PerfilEntity perfil(UUID aplicacao, UUID idPerfil) {
         return perfis.findByIdAndIdAplicacao(idPerfil, aplicacao).orElseThrow(() -> naoEncontrado("Perfil"));
     }
 

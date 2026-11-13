@@ -2,7 +2,7 @@ package br.com.gerenciamentoplataforma.autenticacao.service;
 
 import br.com.gerenciamentoplataforma.autenticacao.config.ConfiguracaoAutenticacao;
 import br.com.gerenciamentoplataforma.autenticacao.exception.AutenticacaoNegadaException;
-import br.com.gerenciamentoplataforma.sessao.entity.Sessao;
+import br.com.gerenciamentoplataforma.sessao.entity.SessaoEntity;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -79,7 +79,7 @@ public class TokenJwt {
         }
     }
 
-    String emitir(Sessao sessao, String audiencia, Instant agora, Instant expiracao) {
+    String emitir(SessaoEntity sessao, String audiencia, Instant agora, Instant expiracao) {
         var cabecalho = new JWSHeader.Builder(JWSAlgorithm.RS256)
                 .type(TIPO)
                 .keyID(chave.getKeyID())

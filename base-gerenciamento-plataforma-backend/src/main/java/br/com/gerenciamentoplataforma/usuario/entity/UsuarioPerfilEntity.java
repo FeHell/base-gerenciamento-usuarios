@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.usuario.entity;
 
-import br.com.gerenciamentoplataforma.perfil.entity.Perfil;
+import br.com.gerenciamentoplataforma.perfil.entity.PerfilEntity;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -13,7 +13,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "usuario_perfil")
-public class UsuarioPerfil {
+public class UsuarioPerfilEntity {
     @EmbeddedId
     private UsuarioPerfilId id;
 
@@ -22,19 +22,19 @@ public class UsuarioPerfil {
         @JoinColumn(name = "id_usuario", referencedColumnName = "id_usuario", insertable = false, updatable = false),
         @JoinColumn(name = "id_aplicacao", referencedColumnName = "id_aplicacao", insertable = false, updatable = false)
     })
-    private UsuarioAplicacao usuarioAplicacao;
+    private UsuarioAplicacaoEntity usuarioAplicacao;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumns({
         @JoinColumn(name = "id_aplicacao", referencedColumnName = "id_aplicacao", insertable = false, updatable = false),
         @JoinColumn(name = "id_perfil", referencedColumnName = "id_perfil", insertable = false, updatable = false)
     })
-    private Perfil perfil;
+    private PerfilEntity perfil;
 
-    protected UsuarioPerfil() {
+    protected UsuarioPerfilEntity() {
     }
 
-    public UsuarioPerfil(UsuarioPerfilId id) {
+    public UsuarioPerfilEntity(UsuarioPerfilId id) {
         this.id = Objects.requireNonNull(id, "id");
     }
 
@@ -42,11 +42,11 @@ public class UsuarioPerfil {
         return id;
     }
 
-    public UsuarioAplicacao getUsuarioAplicacao() {
+    public UsuarioAplicacaoEntity getUsuarioAplicacao() {
         return usuarioAplicacao;
     }
 
-    public Perfil getPerfil() {
+    public PerfilEntity getPerfil() {
         return perfil;
     }
 }

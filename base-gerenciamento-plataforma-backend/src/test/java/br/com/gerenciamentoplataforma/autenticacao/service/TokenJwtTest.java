@@ -1,11 +1,11 @@
 package br.com.gerenciamentoplataforma.autenticacao.service;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
 import br.com.gerenciamentoplataforma.aplicacao.entity.TipoAplicacao;
 import br.com.gerenciamentoplataforma.autenticacao.config.ConfiguracaoAutenticacao;
 import br.com.gerenciamentoplataforma.autenticacao.exception.AutenticacaoNegadaException;
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
-import br.com.gerenciamentoplataforma.sessao.entity.Sessao;
+import br.com.gerenciamentoplataforma.sessao.entity.SessaoEntity;
 import br.com.gerenciamentoplataforma.sessao.entity.StatusSessao;
 
 import com.nimbusds.jose.jwk.JWKSet;
@@ -31,7 +31,7 @@ class TokenJwtTest {
     @Test
     void validaJwtEPublicaSomenteMaterialPublico() throws Exception {
         TokenJwt jwt = jwtLocal();
-        Sessao sessao = sessao();
+        SessaoEntity sessao = sessao();
         String token = jwt.emitir(sessao, "portal", AGORA, AGORA.plusSeconds(300));
 
         assertThat(jwt.validar(token)).isEqualTo(new IdentidadeJwt(
@@ -44,7 +44,7 @@ class TokenJwtTest {
     @Test
     void rejeitaTokenExpiradoOuComAudienciaAdulterada() {
         TokenJwt jwt = jwtLocal();
-        Sessao sessao = sessao();
+        SessaoEntity sessao = sessao();
         String expirado = jwt.emitir(sessao, "portal", AGORA.minusSeconds(300), AGORA);
         String[] partes = jwt.emitir(sessao, "portal", AGORA, AGORA.plusSeconds(300)).split("\\.");
         String claims = new String(Base64.getUrlDecoder().decode(partes[1]), StandardCharsets.UTF_8);
@@ -57,11 +57,11 @@ class TokenJwtTest {
 
     @Test
     void clienteConfidencialExigeSeuProprioSegredo() {
-        Aplicacao confidencial = new Aplicacao("Servidor", "servidor", TipoAplicacao.CONFIDENCIAL, null,
+        AplicacaoEntity confidencial = new AplicacaoEntity("Servidor", "servidor", TipoAplicacao.CONFIDENCIAL, null,
                 StatusCadastro.ATIVO);
         UUID id = UUID.randomUUID();
         ReflectionTestUtils.setField(confidencial, "id", id);
-        Aplicacao publica = new Aplicacao("Portal", "portal", TipoAplicacao.PUBLICO, null, StatusCadastro.ATIVO);
+        AplicacaoEntity publica = new AplicacaoEntity("Portal", "portal", TipoAplicacao.PUBLICO, null, StatusCadastro.ATIVO);
         var semCredencial = new SegredosAutenticacao(new ConfiguracaoAutenticacao(null, null, null, Map.of()));
         String segredo = semCredencial.gerarTokenAtualizacao();
         var credenciais = new SegredosAutenticacao(new ConfiguracaoAutenticacao(null, null, null,
@@ -81,8 +81,8 @@ class TokenJwtTest {
                 Clock.fixed(AGORA, ZoneOffset.UTC));
     }
 
-    private static Sessao sessao() {
-        Sessao sessao = new Sessao(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+    private static SessaoEntity sessao() {
+        SessaoEntity sessao = new SessaoEntity(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 StatusSessao.ATIVO, AGORA.plusSeconds(3600), AGORA.plusSeconds(1800), AGORA);
         ReflectionTestUtils.setField(sessao, "id", UUID.randomUUID());
         return sessao;

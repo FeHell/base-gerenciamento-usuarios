@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.sessao.repository;
 
-import br.com.gerenciamentoplataforma.sessao.entity.Sessao;
+import br.com.gerenciamentoplataforma.sessao.entity.SessaoEntity;
 import br.com.gerenciamentoplataforma.sessao.entity.StatusSessao;
 
 import jakarta.persistence.LockModeType;
@@ -16,24 +16,24 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface SessaoRepository extends JpaRepository<Sessao, UUID> {
+public interface SessaoRepository extends JpaRepository<SessaoEntity, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select s from Sessao s where s.id = :id")
-    Optional<Sessao> bloquearPorId(@Param("id") UUID id);
+    @Query("select s from SessaoEntity s where s.id = :id")
+    Optional<SessaoEntity> bloquearPorId(@Param("id") UUID id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<Sessao> findByIdAndIdAplicacao(UUID id, UUID idAplicacao);
+    Optional<SessaoEntity> findByIdAndIdAplicacao(UUID id, UUID idAplicacao);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<Sessao> findByIdUsuarioAndStatusOrderById(UUID idUsuario, StatusSessao status);
+    List<SessaoEntity> findByIdUsuarioAndStatusOrderById(UUID idUsuario, StatusSessao status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<Sessao> findByIdAplicacaoAndStatusOrderById(UUID idAplicacao, StatusSessao status);
+    List<SessaoEntity> findByIdAplicacaoAndStatusOrderById(UUID idAplicacao, StatusSessao status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<Sessao> findByIdUsuarioAndIdAplicacaoAndStatusOrderById(UUID idUsuario, UUID idAplicacao,
+    List<SessaoEntity> findByIdUsuarioAndIdAplicacaoAndStatusOrderById(UUID idUsuario, UUID idAplicacao,
                                                                StatusSessao status);
 
-    Page<Sessao> findByIdAplicacao(UUID idAplicacao, Pageable pagina);
+    Page<SessaoEntity> findByIdAplicacao(UUID idAplicacao, Pageable pagina);
 }

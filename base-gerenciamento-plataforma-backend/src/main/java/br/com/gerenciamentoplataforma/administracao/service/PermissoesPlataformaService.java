@@ -1,11 +1,11 @@
 package br.com.gerenciamentoplataforma.administracao.service;
 
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
-import br.com.gerenciamentoplataforma.permissao.entity.Permissao;
+import br.com.gerenciamentoplataforma.permissao.entity.PermissaoEntity;
 import br.com.gerenciamentoplataforma.permissao.repository.PermissaoRepository;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacao;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoId;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataforma;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaId;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioAplicacaoRepository;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioPermissaoPlataformaRepository;
@@ -45,7 +45,7 @@ class PermissoesPlataformaService {
         var atuais = atribuicoes.findByIdIdUsuario(idUsuario);
         Set<UUID> idsAtuais = atuais.stream().map(a -> a.getId().getIdPermissao()).collect(Collectors.toSet());
         List<String> solicitados = codigos.stream().distinct().sorted().toList();
-        List<Permissao> desejadas = solicitados.isEmpty() ? List.of()
+        List<PermissaoEntity> desejadas = solicitados.isEmpty() ? List.of()
                 : catalogo.findByNomePlataformaIsNotNullAndCodigoIn(solicitados);
         if (desejadas.size() != solicitados.size() || desejadas.stream().anyMatch(p ->
                 p.getStatus() != StatusCadastro.ATIVO && !idsAtuais.contains(p.getId()))) {
@@ -54,16 +54,16 @@ class PermissoesPlataformaService {
 
         if (desejadas.stream().anyMatch(p -> p.getStatus() == StatusCadastro.ATIVO)) {
             var chave = new UsuarioAplicacaoId(idUsuario, idAplicacao);
-            var vinculo = vinculos.findById(chave).orElseGet(() -> vinculos.save(new UsuarioAplicacao(chave)));
+            var vinculo = vinculos.findById(chave).orElseGet(() -> vinculos.save(new UsuarioAplicacaoEntity(chave)));
             vinculo.definirAtivo(true);
         }
 
         Set<UUID> idsDesejados = new HashSet<>();
-        for (Permissao permissao : desejadas) {
+        for (PermissaoEntity permissao : desejadas) {
             UUID idPermissao = permissao.getId();
             idsDesejados.add(idPermissao);
             if (!idsAtuais.contains(idPermissao)) {
-                atribuicoes.save(new UsuarioPermissaoPlataforma(new UsuarioPermissaoPlataformaId(idUsuario, idPermissao)));
+                atribuicoes.save(new UsuarioPermissaoPlataformaEntity(new UsuarioPermissaoPlataformaId(idUsuario, idPermissao)));
                 registro.registrar("ATRIBUIR_PERMISSAO_PLATAFORMA", "usuario_permissao_plataforma",
                         idAplicacao, idUsuario, idPermissao);
             }

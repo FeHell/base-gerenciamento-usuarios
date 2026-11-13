@@ -3,17 +3,17 @@ package br.com.gerenciamentoplataforma.administracao.bootstrap;
 import br.com.gerenciamentoplataforma.administracao.service.AcessoAdministrativo;
 import br.com.gerenciamentoplataforma.administracao.service.SenhasAdministrativas;
 import br.com.gerenciamentoplataforma.aplicacao.repository.AplicacaoRepository;
-import br.com.gerenciamentoplataforma.auditoria.entity.Auditoria;
+import br.com.gerenciamentoplataforma.auditoria.entity.AuditoriaEntity;
 import br.com.gerenciamentoplataforma.auditoria.repository.AuditoriaRepository;
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
-import br.com.gerenciamentoplataforma.permissao.entity.Permissao;
+import br.com.gerenciamentoplataforma.permissao.entity.PermissaoEntity;
 import br.com.gerenciamentoplataforma.permissao.repository.PermissaoRepository;
 import br.com.gerenciamentoplataforma.usuario.entity.StatusUsuario;
-import br.com.gerenciamentoplataforma.usuario.entity.Usuario;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacao;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioEntity;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoId;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioAplicacaoRepository;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataforma;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaId;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioPermissaoPlataformaRepository;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioRepository;
@@ -77,19 +77,19 @@ public class InicializacaoAdministrativa {
                 insert into aplicacao (id, nome, slug, tipo, status)
                 values (?, 'Administração da plataforma', ?, 'PUBLICO', 'ATIVO')
                 """, idAplicacao, SLUG);
-        var usuario = usuarios.saveAndFlush(new Usuario(dados.login().strip(), hash, dados.email().strip(),
+        var usuario = usuarios.saveAndFlush(new UsuarioEntity(dados.login().strip(), hash, dados.email().strip(),
                 StatusUsuario.ATIVO));
         var permissao = permissoes.findByCodigo(AcessoAdministrativo.PLATAFORMA_ADMINISTRAR)
                 .orElseThrow(() -> new IllegalStateException("Aplique as migrações antes de criar o administrador."));
         if (permissoes.findByCodigo(AcessoAdministrativo.APLICACAO_ADMINISTRAR).isEmpty()) {
-            permissoes.save(new Permissao(AcessoAdministrativo.APLICACAO_ADMINISTRAR,
+            permissoes.save(new PermissaoEntity(AcessoAdministrativo.APLICACAO_ADMINISTRAR,
                     "Administrar perfis, vínculos e sessões da aplicação.", StatusCadastro.ATIVO));
         }
-        vinculos.saveAndFlush(new UsuarioAplicacao(new UsuarioAplicacaoId(usuario.getId(), idAplicacao)));
-        atribuicoes.save(new UsuarioPermissaoPlataforma(
+        vinculos.saveAndFlush(new UsuarioAplicacaoEntity(new UsuarioAplicacaoId(usuario.getId(), idAplicacao)));
+        atribuicoes.save(new UsuarioPermissaoPlataformaEntity(
                 new UsuarioPermissaoPlataformaId(usuario.getId(), permissao.getId())));
         var evento = JsonNodeFactory.instance.objectNode().put("idRecurso", usuario.getId().toString());
-        auditoria.save(new Auditoria(null, idAplicacao, "CRIAR_PRIMEIRO_ADMINISTRADOR",
+        auditoria.save(new AuditoriaEntity(null, idAplicacao, "CRIAR_PRIMEIRO_ADMINISTRADOR",
                 "usuario", null, evento, null));
     }
 }

@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.usuario.entity;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
@@ -13,7 +13,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "usuario_aplicacao")
-public class UsuarioAplicacao {
+public class UsuarioAplicacaoEntity {
     @EmbeddedId
     private UsuarioAplicacaoId id;
 
@@ -22,16 +22,16 @@ public class UsuarioAplicacao {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_usuario", referencedColumnName = "id", insertable = false, updatable = false)
-    private Usuario usuario;
+    private UsuarioEntity usuario;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_aplicacao", referencedColumnName = "id", insertable = false, updatable = false)
-    private Aplicacao aplicacao;
+    private AplicacaoEntity aplicacao;
 
-    protected UsuarioAplicacao() {
+    protected UsuarioAplicacaoEntity() {
     }
 
-    public UsuarioAplicacao(UsuarioAplicacaoId id) {
+    public UsuarioAplicacaoEntity(UsuarioAplicacaoId id) {
         this.id = Objects.requireNonNull(id, "id");
     }
 
@@ -39,11 +39,11 @@ public class UsuarioAplicacao {
         return id;
     }
 
-    public Usuario getUsuario() {
+    public UsuarioEntity getUsuario() {
         return usuario;
     }
 
-    public Aplicacao getAplicacao() {
+    public AplicacaoEntity getAplicacao() {
         return aplicacao;
     }
 

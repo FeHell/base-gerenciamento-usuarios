@@ -23,19 +23,19 @@ import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos
 import br.com.gerenciamentoplataforma.administracao.dto.ContratosAdministrativos.UsuarioListagem;
 import br.com.gerenciamentoplataforma.administracao.repository.ConsultaUsuariosRepository.PermissaoDoUsuario;
 import br.com.gerenciamentoplataforma.administracao.repository.ConsultaUsuariosRepository;
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
-import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissaoEntity;
 import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissaoId;
 import br.com.gerenciamentoplataforma.aplicacao.repository.AplicacaoPermissaoRepository;
 import br.com.gerenciamentoplataforma.aplicacao.repository.AplicacaoRepository;
 import br.com.gerenciamentoplataforma.auditoria.repository.AuditoriaRepository;
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
 import br.com.gerenciamentoplataforma.perfil.repository.PerfilPermissaoRepository;
-import br.com.gerenciamentoplataforma.permissao.entity.Permissao;
+import br.com.gerenciamentoplataforma.permissao.entity.PermissaoEntity;
 import br.com.gerenciamentoplataforma.permissao.repository.PermissaoRepository;
 import br.com.gerenciamentoplataforma.sessao.service.RevogacaoSessaoService;
 import br.com.gerenciamentoplataforma.usuario.entity.StatusUsuario;
-import br.com.gerenciamentoplataforma.usuario.entity.Usuario;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioEntity;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioRepository;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioPermissaoPlataformaRepository;
 
@@ -112,7 +112,7 @@ public class AdministracaoPlataformaService {
 
     @Transactional
     public AplicacaoInfo criarAplicacao(NovaAplicacao dados) {
-        var aplicacao = aplicacoes.saveAndFlush(new Aplicacao(dados.nome().strip(), dados.slug(), dados.tipo(),
+        var aplicacao = aplicacoes.saveAndFlush(new AplicacaoEntity(dados.nome().strip(), dados.slug(), dados.tipo(),
                 dados.descricao(), StatusCadastro.ATIVO));
         registro.registrar("CRIAR_APLICACAO", "aplicacao", aplicacao.getId(), aplicacao.getId());
         return AplicacaoInfo.de(aplicacao);
@@ -120,7 +120,7 @@ public class AdministracaoPlataformaService {
 
     @Transactional
     public AplicacaoInfo atualizarAplicacao(UUID id, AtualizarAplicacao dados) {
-        Aplicacao aplicacao = bloquearAplicacaoEditavel(id);
+        AplicacaoEntity aplicacao = bloquearAplicacaoEditavel(id);
         boolean desativou = aplicacao.getStatus() == StatusCadastro.ATIVO && dados.status() == StatusCadastro.INATIVO;
         aplicacao.atualizar(dados.nome().strip(), dados.descricao(), dados.status());
         if (desativou) {
@@ -140,7 +140,7 @@ public class AdministracaoPlataformaService {
         if (encontrados.isEmpty()) {
             return new Pagina<>(List.of(), encontrados.getNumber(), encontrados.getSize(), encontrados.getTotalElements());
         }
-        var ids = encontrados.stream().map(Usuario::getId).toList();
+        var ids = encontrados.stream().map(UsuarioEntity::getId).toList();
         var porUsuario = permissoesEfetivas(administracao, ids)
                 .collect(Collectors.groupingBy(PermissaoDoUsuario::getIdUsuario));
         var atribuicoesPorUsuario = atribuicoes.listarAtribuicoes(ids).stream()
@@ -155,7 +155,7 @@ public class AdministracaoPlataformaService {
                 consultaUsuarios.permissoes(administracao, usuarios).stream());
     }
 
-    private static UsuarioListagem comAcessos(Usuario usuario, UUID administracao, List<PermissaoDoUsuario> permissoes,
+    private static UsuarioListagem comAcessos(UsuarioEntity usuario, UUID administracao, List<PermissaoDoUsuario> permissoes,
                                              List<String> atribuicoes) {
         return UsuarioListagem.de(usuario, tipoAcesso(administracao, permissoes), permissoes.stream()
                 .map(p -> new PermissaoUsuario(p.getAplicacao(), p.getCodigo())).toList(), atribuicoes);
@@ -213,7 +213,7 @@ public class AdministracaoPlataformaService {
     }
 
     public UsuarioListagem consultarUsuario(UUID id) {
-        Usuario usuario = usuarios.findById(id).orElseThrow(() -> naoEncontrado("Usuário"));
+        UsuarioEntity usuario = usuarios.findById(id).orElseThrow(() -> naoEncontrado("Usuário"));
         UUID administracao = acesso.idAplicacaoPlataforma();
         return comAcessos(usuario, administracao, permissoesEfetivas(administracao, List.of(id)).toList(),
                 permissoesPlataforma.consultar(id));
@@ -224,7 +224,7 @@ public class AdministracaoPlataformaService {
         StatusUsuario status = dados.status() == null ? StatusUsuario.ATIVO : dados.status();
         String hash = senhas.gerarHash(dados.senha());
         UUID administracao = bloquearAlteracoesDeUsuarios();
-        var usuario = usuarios.saveAndFlush(new Usuario(dados.login().strip(), hash, dados.email().strip(), status));
+        var usuario = usuarios.saveAndFlush(new UsuarioEntity(dados.login().strip(), hash, dados.email().strip(), status));
         registro.registrar("CRIAR_USUARIO", "usuario", null, usuario.getId());
         var codigos = dados.permissoesPlataforma() == null ? List.<String>of() : dados.permissoesPlataforma();
         return UsuarioInfo.de(usuario, permissoesPlataforma.substituir(usuario.getId(), administracao, codigos));
@@ -236,7 +236,7 @@ public class AdministracaoPlataformaService {
         if (id.equals(registro.idOperador()) && dados.status() != StatusUsuario.ATIVO) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "O administrador deve manter a própria conta ativa.");
         }
-        Usuario usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
+        UsuarioEntity usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
         boolean desativou = usuario.getStatus() == StatusUsuario.ATIVO && dados.status() != StatusUsuario.ATIVO;
         var atuais = permissoesPlataforma.consultar(id);
         var desejadas = dados.permissoesPlataforma();
@@ -256,7 +256,7 @@ public class AdministracaoPlataformaService {
         if (id.equals(registro.idOperador())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "O administrador deve manter a própria conta ativa.");
         }
-        Usuario usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
+        UsuarioEntity usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
         if (usuario.getStatus() == StatusUsuario.INATIVO) return;
         var atuais = permissoesPlataforma.consultar(id);
         verificarUltimoAdministrador(usuario, StatusUsuario.INATIVO, atuais, atuais);
@@ -268,7 +268,7 @@ public class AdministracaoPlataformaService {
     @Transactional
     public void alterarSenha(UUID id, String senha) {
         String hash = senhas.gerarHash(senha);
-        Usuario usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
+        UsuarioEntity usuario = usuarios.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Usuário"));
         usuario.alterarSenhaHash(hash);
         revogacao.revogarDoUsuario(id);
         registro.registrar("ALTERAR_SENHA", "usuario", null, id);
@@ -281,7 +281,7 @@ public class AdministracaoPlataformaService {
 
     @Transactional
     public PermissaoPlataformaInfo criarPermissaoPlataforma(NovaPermissaoPlataforma dados) {
-        var permissao = permissoes.saveAndFlush(Permissao.daPlataforma(dados.codigo(), dados.nome().strip(),
+        var permissao = permissoes.saveAndFlush(PermissaoEntity.daPlataforma(dados.codigo(), dados.nome().strip(),
                 dados.descricao()));
         registro.registrar("CRIAR_PERMISSAO_PLATAFORMA", "permissao", null, permissao.getId());
         return PermissaoPlataformaInfo.de(permissao);
@@ -301,14 +301,14 @@ public class AdministracaoPlataformaService {
         if (AcessoAdministrativo.PLATAFORMA_ADMINISTRAR.equals(dados.codigo())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Código reservado à administração da plataforma.");
         }
-        var permissao = permissoes.saveAndFlush(new Permissao(dados.codigo(), dados.descricao(), StatusCadastro.ATIVO));
+        var permissao = permissoes.saveAndFlush(new PermissaoEntity(dados.codigo(), dados.descricao(), StatusCadastro.ATIVO));
         registro.registrar("CRIAR_PERMISSAO", "permissao", null, permissao.getId());
         return PermissaoInfo.de(permissao);
     }
 
     @Transactional
     public PermissaoInfo atualizarPermissao(UUID id, AtualizarPermissao dados) {
-        Permissao permissao = permissoes.findById(id).orElseThrow(() -> naoEncontrado("Permissão"));
+        PermissaoEntity permissao = permissoes.findById(id).orElseThrow(() -> naoEncontrado("Permissão"));
         if (AcessoAdministrativo.PLATAFORMA_ADMINISTRAR.equals(permissao.getCodigo())
                 && dados.status() != StatusCadastro.ATIVO) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A permissão da plataforma deve permanecer ativa.");
@@ -321,13 +321,13 @@ public class AdministracaoPlataformaService {
     @Transactional
     public void habilitarPermissao(UUID idAplicacao, UUID idPermissao) {
         bloquearAplicacaoEditavel(idAplicacao);
-        Permissao permissao = permissoes.findById(idPermissao).orElseThrow(() -> naoEncontrado("Permissão"));
+        PermissaoEntity permissao = permissoes.findById(idPermissao).orElseThrow(() -> naoEncontrado("Permissão"));
         if (permissao.getNomePlataforma() != null || permissao.getStatus() != StatusCadastro.ATIVO) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A permissão está indisponível para habilitação.");
         }
         var id = new AplicacaoPermissaoId(idAplicacao, idPermissao);
         if (!habilitacoes.existsById(id)) {
-            habilitacoes.save(new AplicacaoPermissao(id));
+            habilitacoes.save(new AplicacaoPermissaoEntity(id));
             registro.registrar("HABILITAR_PERMISSAO", "aplicacao_permissao", idAplicacao, idPermissao);
         }
     }
@@ -357,7 +357,7 @@ public class AdministracaoPlataformaService {
         return id;
     }
 
-    private void verificarUltimoAdministrador(Usuario usuario, StatusUsuario status,
+    private void verificarUltimoAdministrador(UsuarioEntity usuario, StatusUsuario status,
                                               List<String> atuais, List<String> desejadas) {
         String administrador = AcessoAdministrativo.PLATAFORMA_ADMINISTRAR;
         if (usuario.getStatus() == StatusUsuario.ATIVO && atuais.contains(administrador)
@@ -368,8 +368,8 @@ public class AdministracaoPlataformaService {
         }
     }
 
-    private Aplicacao bloquearAplicacaoEditavel(UUID id) {
-        Aplicacao aplicacao = aplicacoes.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Aplicação"));
+    private AplicacaoEntity bloquearAplicacaoEditavel(UUID id) {
+        AplicacaoEntity aplicacao = aplicacoes.bloquearPorId(id).orElseThrow(() -> naoEncontrado("Aplicação"));
         acesso.verificarAplicacaoEditavel(id);
         return aplicacao;
     }

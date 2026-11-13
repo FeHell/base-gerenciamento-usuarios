@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.sessao.service;
 
-import br.com.gerenciamentoplataforma.sessao.entity.Sessao;
+import br.com.gerenciamentoplataforma.sessao.entity.SessaoEntity;
 import br.com.gerenciamentoplataforma.sessao.entity.StatusSessao;
 import br.com.gerenciamentoplataforma.sessao.repository.SessaoRepository;
 import br.com.gerenciamentoplataforma.sessao.repository.TokenAtualizacaoRepository;
@@ -27,7 +27,7 @@ public class RevogacaoSessaoService {
         this.relogio = relogio;
     }
 
-    public void revogar(Sessao sessao, Instant agora) {
+    public void revogar(SessaoEntity sessao, Instant agora) {
         sessao.revogar(agora);
         tokens.revogarFamilia(sessao.getId(), sessao.getIdFamilia(), agora);
     }

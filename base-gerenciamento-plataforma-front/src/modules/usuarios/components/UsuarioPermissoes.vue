@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { traduzirEnum } from '@/shared/traducoes/enums'
 import { computed } from 'vue'
 import BotaoBase from '@/components/ui/BotaoBase.vue'
 import CampoSelecao from '@/components/ui/CampoSelecao.vue'
@@ -93,7 +94,11 @@ const codigosEfetivos = computed(
                     <strong>{{ perfil.nome }}</strong>
                     <p class="auxiliar">
                       {{ atribuido(perfil) ? 'Atribuído' : 'Não atribuído'
-                      }}{{ perfil.status === 'INATIVO' ? ' · Inativo' : '' }}
+                      }}{{
+                        perfil.status === 'INATIVO'
+                          ? ' · ' + traduzirEnum('statusCadastro', perfil.status)
+                          : ''
+                      }}
                     </p>
                     <p v-if="perfil.descricao" class="auxiliar">{{ perfil.descricao }}</p>
                   </div>
@@ -124,7 +129,10 @@ const codigosEfetivos = computed(
                   <p v-else-if="!detalhes.dados.length">Nenhuma permissão neste perfil.</p>
                   <ul v-else>
                     <li v-for="permissao in detalhes.dados" :key="permissao.id">
-                      {{ permissao.codigo }}{{ permissao.status === 'INATIVO' ? ' (inativa)' : '' }}
+                      {{ traduzirEnum('permissao', permissao.codigo) }}
+                      <span v-if="permissao.status === 'INATIVO'">
+                        · {{ traduzirEnum('statusPermissao', permissao.status) }}</span
+                      >
                     </li>
                   </ul>
                 </div>
@@ -139,14 +147,14 @@ const codigosEfetivos = computed(
             <ul v-else class="lista">
               <li v-for="permissao in permissoes" :key="permissao.id">
                 <div class="permissao">
-                  <strong>{{ permissao.codigo }}</strong>
+                  <strong>{{ traduzirEnum('permissao', permissao.codigo) }}</strong>
                   <span
                     class="selo"
                     :class="{ 'selo--concedido': codigosEfetivos.has(permissao.codigo) }"
                   >
                     {{
                       permissao.status === 'INATIVO'
-                        ? 'Inativa'
+                        ? traduzirEnum('statusPermissao', permissao.status)
                         : codigosEfetivos.has(permissao.codigo)
                           ? 'Efetiva'
                           : 'Sem acesso efetivo'

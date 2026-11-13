@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.perfil.entity;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissaoEntity;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -13,7 +13,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "perfil_permissao")
-public class PerfilPermissao {
+public class PerfilPermissaoEntity {
     @EmbeddedId
     private PerfilPermissaoId id;
 
@@ -22,19 +22,19 @@ public class PerfilPermissao {
         @JoinColumn(name = "id_aplicacao", referencedColumnName = "id_aplicacao", insertable = false, updatable = false),
         @JoinColumn(name = "id_perfil", referencedColumnName = "id_perfil", insertable = false, updatable = false)
     })
-    private Perfil perfil;
+    private PerfilEntity perfil;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumns({
         @JoinColumn(name = "id_aplicacao", referencedColumnName = "id_aplicacao", insertable = false, updatable = false),
         @JoinColumn(name = "id_permissao", referencedColumnName = "id_permissao", insertable = false, updatable = false)
     })
-    private AplicacaoPermissao aplicacaoPermissao;
+    private AplicacaoPermissaoEntity aplicacaoPermissao;
 
-    protected PerfilPermissao() {
+    protected PerfilPermissaoEntity() {
     }
 
-    public PerfilPermissao(PerfilPermissaoId id) {
+    public PerfilPermissaoEntity(PerfilPermissaoId id) {
         this.id = Objects.requireNonNull(id, "id");
     }
 
@@ -42,11 +42,11 @@ public class PerfilPermissao {
         return id;
     }
 
-    public Perfil getPerfil() {
+    public PerfilEntity getPerfil() {
         return perfil;
     }
 
-    public AplicacaoPermissao getAplicacaoPermissao() {
+    public AplicacaoPermissaoEntity getAplicacaoPermissao() {
         return aplicacaoPermissao;
     }
 }

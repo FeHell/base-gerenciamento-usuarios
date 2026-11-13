@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { traduzirEnum } from '@/shared/traducoes/enums'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BotaoBase from '@/components/ui/BotaoBase.vue'
@@ -9,7 +10,7 @@ import IconeBase from '@/components/ui/IconeBase.vue'
 import { useAutenticacao } from '@/modules/autenticacao/stores/autenticacao'
 import ConfirmarExclusaoUsuario from '../components/ConfirmarExclusaoUsuario.vue'
 import StatusUsuarioBadge from '../components/StatusUsuarioBadge.vue'
-import { opcoesStatus, opcoesTipo, rotulosTipo, type UsuarioListagem } from '../contratos'
+import { opcoesStatus, opcoesTipo, type UsuarioListagem } from '../contratos'
 import { usePesquisaUsuarios } from '../composables/usePesquisaUsuarios'
 
 const router = useRouter()
@@ -123,7 +124,9 @@ function aposExcluir() {
               {{ usuario.login }}
             </th>
             <td role="cell" data-rotulo="E-mail">{{ usuario.email }}</td>
-            <td role="cell" data-rotulo="Tipo de acesso">{{ rotulosTipo[usuario.tipo] }}</td>
+            <td role="cell" data-rotulo="Tipo de acesso">
+              {{ traduzirEnum('tipoAcesso', usuario.tipo) }}
+            </td>
             <td role="cell" data-rotulo="Permissões">
               <span v-if="!usuario.permissoes.length">Nenhuma efetiva</span>
               <details v-else>
@@ -136,7 +139,7 @@ function aposExcluir() {
                     v-for="permissao in usuario.permissoes"
                     :key="permissao.aplicacao + ':' + permissao.codigo"
                   >
-                    <strong>{{ permissao.codigo }}</strong
+                    <strong>{{ traduzirEnum('permissao', permissao.codigo) }}</strong
                     ><span>{{ permissao.aplicacao }}</span>
                   </li>
                 </ul>

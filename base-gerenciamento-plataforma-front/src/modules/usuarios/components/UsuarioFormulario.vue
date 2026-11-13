@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { traduzirEnum } from '@/shared/traducoes/enums'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import BotaoBase from '@/components/ui/BotaoBase.vue'
@@ -7,13 +8,7 @@ import CampoTexto from '@/components/ui/CampoTexto.vue'
 import DialogoBase from '@/components/ui/DialogoBase.vue'
 import SelecaoPermissoesPlataforma from './SelecaoPermissoesPlataforma.vue'
 import { ErroApi } from '@/services/clienteHttp'
-import {
-  opcoesStatus,
-  rotulosTipo,
-  type StatusUsuario,
-  type Usuario,
-  type UsuarioListagem,
-} from '../contratos'
+import { opcoesStatus, type StatusUsuario, type Usuario, type UsuarioListagem } from '../contratos'
 import { useUsuariosApi } from '../services/usuariosApi'
 
 const props = defineProps<{ usuario?: UsuarioListagem; contaPropria?: boolean }>()
@@ -163,7 +158,7 @@ async function salvar() {
       />
       <div class="tipo-acesso">
         <span>Tipo de acesso efetivo</span>
-        <p>{{ usuario ? rotulosTipo[usuario.tipo] : rotulosTipo.USUARIO }}</p>
+        <p>{{ traduzirEnum('tipoAcesso', usuario?.tipo ?? 'USUARIO') }}</p>
       </div>
     </div>
     <SelecaoPermissoesPlataforma v-model="permissoes" :desabilitada="salvando" />

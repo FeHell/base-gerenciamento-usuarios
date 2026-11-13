@@ -1,7 +1,7 @@
 package br.com.gerenciamentoplataforma.administracao.repository;
 
 import br.com.gerenciamentoplataforma.usuario.entity.StatusUsuario;
-import br.com.gerenciamentoplataforma.usuario.entity.Usuario;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioEntity;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,13 +15,13 @@ import org.springframework.data.repository.query.Param;
 
 import static br.com.gerenciamentoplataforma.usuario.repository.UsuarioPerfilRepository.VINCULOS_ATIVOS;
 
-public interface ConsultaUsuariosRepository extends Repository<Usuario, UUID> {
+public interface ConsultaUsuariosRepository extends Repository<UsuarioEntity, UUID> {
 
     String VINCULOS_PLATAFORMA_ATIVOS = """
-            from UsuarioPermissaoPlataforma concessao
-            join Permissao permissao on permissao.id = concessao.id.idPermissao
-            join Usuario usuario on usuario.id = concessao.id.idUsuario
-            join UsuarioAplicacao vinculo on vinculo.id.idUsuario = usuario.id and vinculo.id.idAplicacao = :administracao
+            from UsuarioPermissaoPlataformaEntity concessao
+            join PermissaoEntity permissao on permissao.id = concessao.id.idPermissao
+            join UsuarioEntity usuario on usuario.id = concessao.id.idUsuario
+            join UsuarioAplicacaoEntity vinculo on vinculo.id.idUsuario = usuario.id and vinculo.id.idAplicacao = :administracao
             join vinculo.aplicacao aplicacao
             where permissao.nomePlataforma is not null
               and vinculo.ativo = true
@@ -56,13 +56,13 @@ public interface ConsultaUsuariosRepository extends Repository<Usuario, UUID> {
     List<PermissaoDoUsuario> permissoesDaPlataforma(UUID administracao, List<UUID> usuarios);
 
     @Query("""
-            select u from Usuario u
+            select u from UsuarioEntity u
             where locate(lower(:login), lower(u.login)) > 0
               and locate(lower(:email), lower(u.email)) > 0
               and (:status is null or u.status = :status)
               and (:tipo is null or :tipo =
             """ + TIPO_ACESSO + ")")
-    Page<Usuario> pesquisar(@Param("login") String login, @Param("email") String email,
+    Page<UsuarioEntity> pesquisar(@Param("login") String login, @Param("email") String email,
             @Param("status") StatusUsuario status, @Param("tipo") String tipo,
             @Param("administracao") UUID administracao, @Param("permissaoPlataforma") String permissaoPlataforma,
             @Param("permissaoAplicacao") String permissaoAplicacao, Pageable pagina);
@@ -77,14 +77,14 @@ public interface ConsultaUsuariosRepository extends Repository<Usuario, UUID> {
     List<PermissaoDoUsuario> permissoes(UUID administracao, List<UUID> usuarios);
 
     @Query("""
-            select u.status as status, count(u) as total from Usuario u
+            select u.status as status, count(u) as total from UsuarioEntity u
             where u.dataCriacao >= :inicio and u.dataCriacao <= :fim
             group by u.status
             """)
     List<ContagemStatus> contarPorStatus(Instant inicio, Instant fim);
 
     @Query("select " + TIPO_ACESSO + """
-            as tipo, count(u) as total from Usuario u
+            as tipo, count(u) as total from UsuarioEntity u
             where u.dataCriacao >= :inicio and u.dataCriacao <= :fim
             group by 1
             """)

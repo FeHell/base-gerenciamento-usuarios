@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.aplicacao.entity;
 
-import br.com.gerenciamentoplataforma.permissao.entity.Permissao;
+import br.com.gerenciamentoplataforma.permissao.entity.PermissaoEntity;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -12,22 +12,22 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "aplicacao_permissao")
-public class AplicacaoPermissao {
+public class AplicacaoPermissaoEntity {
     @EmbeddedId
     private AplicacaoPermissaoId id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_aplicacao", referencedColumnName = "id", insertable = false, updatable = false)
-    private Aplicacao aplicacao;
+    private AplicacaoEntity aplicacao;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_permissao", referencedColumnName = "id", insertable = false, updatable = false)
-    private Permissao permissao;
+    private PermissaoEntity permissao;
 
-    protected AplicacaoPermissao() {
+    protected AplicacaoPermissaoEntity() {
     }
 
-    public AplicacaoPermissao(AplicacaoPermissaoId id) {
+    public AplicacaoPermissaoEntity(AplicacaoPermissaoId id) {
         this.id = Objects.requireNonNull(id, "id");
     }
 
@@ -35,11 +35,11 @@ public class AplicacaoPermissao {
         return id;
     }
 
-    public Aplicacao getAplicacao() {
+    public AplicacaoEntity getAplicacao() {
         return aplicacao;
     }
 
-    public Permissao getPermissao() {
+    public PermissaoEntity getPermissao() {
         return permissao;
     }
 }

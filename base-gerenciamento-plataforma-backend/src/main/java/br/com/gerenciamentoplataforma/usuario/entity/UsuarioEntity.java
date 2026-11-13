@@ -17,7 +17,7 @@ import org.hibernate.generator.EventType;
 
 @Entity
 @Table(name = "usuario")
-public class Usuario {
+public class UsuarioEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false)
@@ -41,10 +41,10 @@ public class Usuario {
     @Column(name = "data_criacao", nullable = false, insertable = false, updatable = false)
     private Instant dataCriacao;
 
-    protected Usuario() {
+    protected UsuarioEntity() {
     }
 
-    public Usuario(String login, String senhaHash, String email, StatusUsuario status) {
+    public UsuarioEntity(String login, String senhaHash, String email, StatusUsuario status) {
         this.login = Objects.requireNonNull(login, "login");
         this.senhaHash = Objects.requireNonNull(senhaHash, "senhaHash");
         this.email = Objects.requireNonNull(email, "email");

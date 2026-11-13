@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.perfil.entity;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
 
 import jakarta.persistence.Column;
@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "perfil")
-public class Perfil {
+public class PerfilEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id_perfil", nullable = false, updatable = false)
@@ -40,12 +40,12 @@ public class Perfil {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_aplicacao", referencedColumnName = "id", insertable = false, updatable = false)
-    private Aplicacao aplicacao;
+    private AplicacaoEntity aplicacao;
 
-    protected Perfil() {
+    protected PerfilEntity() {
     }
 
-    public Perfil(UUID idAplicacao, String nome, String descricao, StatusCadastro status) {
+    public PerfilEntity(UUID idAplicacao, String nome, String descricao, StatusCadastro status) {
         this.idAplicacao = Objects.requireNonNull(idAplicacao, "idAplicacao");
         this.nome = Objects.requireNonNull(nome, "nome");
         this.descricao = descricao;
@@ -72,7 +72,7 @@ public class Perfil {
         return status;
     }
 
-    public Aplicacao getAplicacao() {
+    public AplicacaoEntity getAplicacao() {
         return aplicacao;
     }
 

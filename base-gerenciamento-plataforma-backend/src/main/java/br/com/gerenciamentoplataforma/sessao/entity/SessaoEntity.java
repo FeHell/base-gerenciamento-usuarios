@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.sessao.entity;
 
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacao;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,7 +22,7 @@ import org.hibernate.generator.EventType;
 
 @Entity
 @Table(name = "sessoes")
-public class Sessao {
+public class SessaoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false)
@@ -62,12 +62,12 @@ public class Sessao {
         @JoinColumn(name = "id_usuario", referencedColumnName = "id_usuario", insertable = false, updatable = false),
         @JoinColumn(name = "id_aplicacao", referencedColumnName = "id_aplicacao", insertable = false, updatable = false)
     })
-    private UsuarioAplicacao usuarioAplicacao;
+    private UsuarioAplicacaoEntity usuarioAplicacao;
 
-    protected Sessao() {
+    protected SessaoEntity() {
     }
 
-    public Sessao(
+    public SessaoEntity(
             UUID idUsuario,
             UUID idAplicacao,
             UUID idFamilia,
@@ -124,7 +124,7 @@ public class Sessao {
         return dataCriacao;
     }
 
-    public UsuarioAplicacao getUsuarioAplicacao() {
+    public UsuarioAplicacaoEntity getUsuarioAplicacao() {
         return usuarioAplicacao;
     }
 

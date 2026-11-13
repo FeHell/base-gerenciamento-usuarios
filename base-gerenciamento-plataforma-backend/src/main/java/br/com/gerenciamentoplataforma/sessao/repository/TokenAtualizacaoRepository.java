@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.sessao.repository;
 
-import br.com.gerenciamentoplataforma.sessao.entity.TokenAtualizacao;
+import br.com.gerenciamentoplataforma.sessao.entity.TokenAtualizacaoEntity;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -11,16 +11,16 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface TokenAtualizacaoRepository extends JpaRepository<TokenAtualizacao, UUID> {
+public interface TokenAtualizacaoRepository extends JpaRepository<TokenAtualizacaoEntity, UUID> {
 
-    Optional<TokenAtualizacao> findByHashToken(String hashToken);
+    Optional<TokenAtualizacaoEntity> findByHashToken(String hashToken);
 
-    @Query("select t.idSessao from TokenAtualizacao t where t.hashToken = :hashToken")
+    @Query("select t.idSessao from TokenAtualizacaoEntity t where t.hashToken = :hashToken")
     Optional<UUID> buscarIdSessaoPorHash(@Param("hashToken") String hashToken);
 
     @Modifying(flushAutomatically = true)
     @Query("""
-            update TokenAtualizacao t
+            update TokenAtualizacaoEntity t
                set t.revogado = true, t.dataRevogacao = :agora
              where t.idSessao = :idSessao and t.idFamilia = :idFamilia and t.revogado = false
             """)

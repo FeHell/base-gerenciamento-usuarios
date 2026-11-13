@@ -18,7 +18,7 @@ import org.hibernate.generator.EventType;
 
 @Entity
 @Table(name = "aplicacao")
-public class Aplicacao {
+public class AplicacaoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false)
@@ -45,10 +45,10 @@ public class Aplicacao {
     @Column(name = "data_criacao", nullable = false, insertable = false, updatable = false)
     private Instant dataCriacao;
 
-    protected Aplicacao() {
+    protected AplicacaoEntity() {
     }
 
-    public Aplicacao(String nome, String slug, TipoAplicacao tipo, String descricao, StatusCadastro status) {
+    public AplicacaoEntity(String nome, String slug, TipoAplicacao tipo, String descricao, StatusCadastro status) {
         this.nome = Objects.requireNonNull(nome, "nome");
         this.slug = Objects.requireNonNull(slug, "slug");
         this.tipo = Objects.requireNonNull(tipo, "tipo");

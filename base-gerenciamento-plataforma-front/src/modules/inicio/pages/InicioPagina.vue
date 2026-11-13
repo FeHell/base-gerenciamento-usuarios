@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { traduzirEnum } from '@/shared/traducoes/enums'
 import { ambiente } from '@/app/config/ambiente'
 import IconeBase from '@/components/ui/IconeBase.vue'
 import { useAutenticacao } from '@/modules/autenticacao/stores/autenticacao'
@@ -33,7 +34,7 @@ const autenticacao = useAutenticacao()
           <dd>
             {{
               autenticacao.permissoes.includes('PLATAFORMA_ADMINISTRAR')
-                ? 'Administrador da plataforma'
+                ? traduzirEnum('permissao', 'PLATAFORMA_ADMINISTRAR')
                 : 'Usuário da aplicação'
             }}
           </dd>

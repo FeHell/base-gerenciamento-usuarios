@@ -6,14 +6,14 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "usuario_permissao_plataforma")
-public class UsuarioPermissaoPlataforma {
+public class UsuarioPermissaoPlataformaEntity {
     @EmbeddedId
     private UsuarioPermissaoPlataformaId id;
 
-    protected UsuarioPermissaoPlataforma() {
+    protected UsuarioPermissaoPlataformaEntity() {
     }
 
-    public UsuarioPermissaoPlataforma(UsuarioPermissaoPlataformaId id) {
+    public UsuarioPermissaoPlataformaEntity(UsuarioPermissaoPlataformaId id) {
         this.id = id;
     }
 

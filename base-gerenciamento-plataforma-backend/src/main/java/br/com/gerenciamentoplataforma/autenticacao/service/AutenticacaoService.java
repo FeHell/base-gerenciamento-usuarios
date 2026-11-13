@@ -1,22 +1,22 @@
 package br.com.gerenciamentoplataforma.autenticacao.service;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
 import br.com.gerenciamentoplataforma.aplicacao.repository.AplicacaoRepository;
-import br.com.gerenciamentoplataforma.auditoria.entity.Auditoria;
+import br.com.gerenciamentoplataforma.auditoria.entity.AuditoriaEntity;
 import br.com.gerenciamentoplataforma.auditoria.repository.AuditoriaRepository;
 import br.com.gerenciamentoplataforma.autenticacao.dto.LoginEntrada;
 import br.com.gerenciamentoplataforma.autenticacao.dto.TokensAutenticacao;
 import br.com.gerenciamentoplataforma.autenticacao.dto.UsuarioAutenticado;
 import br.com.gerenciamentoplataforma.autenticacao.exception.AutenticacaoNegadaException;
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
-import br.com.gerenciamentoplataforma.sessao.entity.Sessao;
+import br.com.gerenciamentoplataforma.sessao.entity.SessaoEntity;
 import br.com.gerenciamentoplataforma.sessao.entity.StatusSessao;
-import br.com.gerenciamentoplataforma.sessao.entity.TokenAtualizacao;
+import br.com.gerenciamentoplataforma.sessao.entity.TokenAtualizacaoEntity;
 import br.com.gerenciamentoplataforma.sessao.repository.SessaoRepository;
 import br.com.gerenciamentoplataforma.sessao.repository.TokenAtualizacaoRepository;
 import br.com.gerenciamentoplataforma.sessao.service.RevogacaoSessaoService;
 import br.com.gerenciamentoplataforma.usuario.entity.StatusUsuario;
-import br.com.gerenciamentoplataforma.usuario.entity.Usuario;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoId;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioAplicacaoRepository;
 import br.com.gerenciamentoplataforma.usuario.repository.UsuarioRepository;
@@ -76,14 +76,14 @@ public class AutenticacaoService {
     public TokensAutenticacao login(String slug, LoginEntrada entrada, String segredoCliente, String ip) {
         var encontrado = usuarios.buscarLoginParaAutenticacao(entrada.login());
         if (entrada.senha().getBytes(StandardCharsets.UTF_8).length > 72
-                || !senhas.matches(entrada.senha(), encontrado.map(Usuario::getSenhaHash).orElse(hashAusente))) {
+                || !senhas.matches(entrada.senha(), encontrado.map(UsuarioEntity::getSenhaHash).orElse(hashAusente))) {
             throw new AutenticacaoNegadaException();
         }
-        Usuario usuario = encontrado.orElseThrow(AutenticacaoNegadaException::new);
-        Aplicacao aplicacao = autenticarCliente(aplicacoes.buscarSlugParaLogin(slug), segredoCliente);
+        UsuarioEntity usuario = encontrado.orElseThrow(AutenticacaoNegadaException::new);
+        AplicacaoEntity aplicacao = autenticarCliente(aplicacoes.buscarSlugParaLogin(slug), segredoCliente);
         validarVinculo(usuario, aplicacao.getId());
         Instant agora = relogio.instant();
-        Sessao sessao = sessoes.save(new Sessao(usuario.getId(), aplicacao.getId(), UUID.randomUUID(),
+        SessaoEntity sessao = sessoes.save(new SessaoEntity(usuario.getId(), aplicacao.getId(), UUID.randomUUID(),
                 StatusSessao.ATIVO, agora.plus(VALIDADE_ABSOLUTA), agora.plus(LIMITE_INATIVIDADE), agora));
         TokensAutenticacao resposta = emitirTokens(sessao, slug, null, agora);
         registrar("LOGIN", sessao, ip);
@@ -92,11 +92,11 @@ public class AutenticacaoService {
 
     @Transactional(isolation = Isolation.READ_COMMITTED, noRollbackFor = AutenticacaoNegadaException.class)
     public TokensAutenticacao renovar(String slug, String tokenAtualizacao, String segredoCliente, String ip) {
-        Aplicacao aplicacao = autenticarCliente(aplicacoes.findBySlug(slug), segredoCliente);
+        AplicacaoEntity aplicacao = autenticarCliente(aplicacoes.findBySlug(slug), segredoCliente);
         String hash = segredos.hash(tokenAtualizacao);
         UUID idSessao = tokens.buscarIdSessaoPorHash(hash).orElseThrow(AutenticacaoNegadaException::new);
         // O bloqueio da sessão serializa renovação e logout. O token é carregado depois do bloqueio.
-        Sessao sessao = sessoes.bloquearPorId(idSessao).orElseThrow(AutenticacaoNegadaException::new);
+        SessaoEntity sessao = sessoes.bloquearPorId(idSessao).orElseThrow(AutenticacaoNegadaException::new);
         if (!sessao.getIdAplicacao().equals(aplicacao.getId())) {
             throw new AutenticacaoNegadaException();
         }
@@ -107,7 +107,7 @@ public class AutenticacaoService {
             }
             throw new AutenticacaoNegadaException();
         }
-        TokenAtualizacao token = tokens.findByHashToken(hash).orElseThrow(AutenticacaoNegadaException::new);
+        TokenAtualizacaoEntity token = tokens.findByHashToken(hash).orElseThrow(AutenticacaoNegadaException::new);
         if (token.getDataUtilizacao() != null) {
             revogacao.revogar(sessao, agora);
             registrar("REUTILIZACAO_REFRESH_TOKEN", sessao, ip);
@@ -117,7 +117,7 @@ public class AutenticacaoService {
             throw new AutenticacaoNegadaException();
         }
 
-        Usuario usuario = usuarios.findById(sessao.getIdUsuario()).orElseThrow(AutenticacaoNegadaException::new);
+        UsuarioEntity usuario = usuarios.findById(sessao.getIdUsuario()).orElseThrow(AutenticacaoNegadaException::new);
         validarVinculo(usuario, aplicacao.getId());
         Instant expiracao = menor(sessao.getExpiracaoAbsoluta(), agora.plus(LIMITE_INATIVIDADE));
         if (!expiracao.truncatedTo(ChronoUnit.SECONDS).isAfter(agora)) {
@@ -130,15 +130,15 @@ public class AutenticacaoService {
 
     @Transactional(readOnly = true, noRollbackFor = AutenticacaoNegadaException.class)
     public UsuarioAutenticado consultarUsuario(String slug, IdentidadeJwt identidade) {
-        Sessao sessao = sessoes.findById(identidade.idSessao()).orElseThrow(AutenticacaoNegadaException::new);
-        Usuario usuario = validarSessao(slug, identidade, sessao, relogio.instant());
+        SessaoEntity sessao = sessoes.findById(identidade.idSessao()).orElseThrow(AutenticacaoNegadaException::new);
+        UsuarioEntity usuario = validarSessao(slug, identidade, sessao, relogio.instant());
         return new UsuarioAutenticado(usuario.getId(), usuario.getLogin(), usuario.getEmail(),
                 sessao.getIdAplicacao(), slug);
     }
 
     @Transactional
     public void logout(String slug, IdentidadeJwt identidade, String ip) {
-        Sessao sessao = sessoes.bloquearPorId(identidade.idSessao()).orElseThrow(AutenticacaoNegadaException::new);
+        SessaoEntity sessao = sessoes.bloquearPorId(identidade.idSessao()).orElseThrow(AutenticacaoNegadaException::new);
         Instant agora = relogio.instant();
         validarSessao(slug, identidade, sessao, agora);
         revogacao.revogar(sessao, agora);
@@ -160,7 +160,7 @@ public class AutenticacaoService {
         registrar("LOGOUT", sessao.get(), ip);
     }
 
-    private Usuario validarSessao(String slug, IdentidadeJwt identidade, Sessao sessao, Instant agora) {
+    private UsuarioEntity validarSessao(String slug, IdentidadeJwt identidade, SessaoEntity sessao, Instant agora) {
         if (!slug.equals(identidade.audiencia())
                 || !sessao.getIdAplicacao().equals(identidade.idAplicacao())
                 || !sessao.getIdUsuario().equals(identidade.idUsuario())
@@ -175,32 +175,32 @@ public class AutenticacaoService {
         return usuario;
     }
 
-    private Aplicacao autenticarCliente(Optional<Aplicacao> aplicacao, String segredo) {
+    private AplicacaoEntity autenticarCliente(Optional<AplicacaoEntity> aplicacao, String segredo) {
         return aplicacao
                 .filter(a -> a.getStatus() == StatusCadastro.ATIVO && segredos.autorizaCliente(a, segredo))
                 .orElseThrow(AutenticacaoNegadaException::new);
     }
 
-    private void validarVinculo(Usuario usuario, UUID idAplicacao) {
+    private void validarVinculo(UsuarioEntity usuario, UUID idAplicacao) {
         if (usuario.getStatus() != StatusUsuario.ATIVO
                 || !vinculos.existsByIdAndAtivoTrue(new UsuarioAplicacaoId(usuario.getId(), idAplicacao))) {
             throw new AutenticacaoNegadaException();
         }
     }
 
-    private TokensAutenticacao emitirTokens(Sessao sessao, String slug, UUID idAnterior, Instant agora) {
+    private TokensAutenticacao emitirTokens(SessaoEntity sessao, String slug, UUID idAnterior, Instant agora) {
         Instant expiracao = menor(agora.plus(TokenJwt.VALIDADE),
                 menor(sessao.getExpiracaoAbsoluta(), sessao.getExpiracaoInatividade())).truncatedTo(ChronoUnit.SECONDS);
         String acesso = jwt.emitir(sessao, slug, agora, expiracao);
         String atualizacao = segredos.gerarTokenAtualizacao();
-        tokens.save(new TokenAtualizacao(sessao.getId(), sessao.getIdFamilia(), segredos.hash(atualizacao),
+        tokens.save(new TokenAtualizacaoEntity(sessao.getId(), sessao.getIdFamilia(), segredos.hash(atualizacao),
                 idAnterior, sessao.getExpiracaoAbsoluta()));
         return new TokensAutenticacao(acesso, atualizacao, expiracao);
     }
 
-    private void registrar(String acao, Sessao sessao, String ip) {
+    private void registrar(String acao, SessaoEntity sessao, String ip) {
         var dados = JsonNodeFactory.instance.objectNode().put("idSessao", sessao.getId().toString());
-        auditoria.save(new Auditoria(sessao.getIdUsuario(), sessao.getIdAplicacao(), acao,
+        auditoria.save(new AuditoriaEntity(sessao.getIdUsuario(), sessao.getIdAplicacao(), acao,
                 "sessoes", null, dados, ip != null && ip.length() <= 45 ? ip : null));
     }
 

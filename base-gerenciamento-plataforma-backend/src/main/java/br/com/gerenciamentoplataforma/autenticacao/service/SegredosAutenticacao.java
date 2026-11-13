@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.autenticacao.service;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
 import br.com.gerenciamentoplataforma.aplicacao.entity.TipoAplicacao;
 import br.com.gerenciamentoplataforma.autenticacao.config.ConfiguracaoAutenticacao;
 
@@ -31,7 +31,7 @@ class SegredosAutenticacao {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    boolean autorizaCliente(Aplicacao aplicacao, String segredo) {
+    boolean autorizaCliente(AplicacaoEntity aplicacao, String segredo) {
         if (aplicacao.getTipo() == TipoAplicacao.PUBLICO) {
             return segredo == null;
         }

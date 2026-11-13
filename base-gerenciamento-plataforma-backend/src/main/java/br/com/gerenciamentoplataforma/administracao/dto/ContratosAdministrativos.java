@@ -1,16 +1,16 @@
 package br.com.gerenciamentoplataforma.administracao.dto;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
 import br.com.gerenciamentoplataforma.aplicacao.entity.TipoAplicacao;
-import br.com.gerenciamentoplataforma.auditoria.entity.Auditoria;
+import br.com.gerenciamentoplataforma.auditoria.entity.AuditoriaEntity;
 import br.com.gerenciamentoplataforma.common.StatusCadastro;
-import br.com.gerenciamentoplataforma.perfil.entity.Perfil;
-import br.com.gerenciamentoplataforma.permissao.entity.Permissao;
-import br.com.gerenciamentoplataforma.sessao.entity.Sessao;
+import br.com.gerenciamentoplataforma.perfil.entity.PerfilEntity;
+import br.com.gerenciamentoplataforma.permissao.entity.PermissaoEntity;
+import br.com.gerenciamentoplataforma.sessao.entity.SessaoEntity;
 import br.com.gerenciamentoplataforma.sessao.entity.StatusSessao;
 import br.com.gerenciamentoplataforma.usuario.entity.StatusUsuario;
-import br.com.gerenciamentoplataforma.usuario.entity.Usuario;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacao;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioEntity;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoEntity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -84,7 +84,7 @@ public final class ContratosAdministrativos {
     }
 
     public record PermissaoPlataformaInfo(UUID id, String codigo, String nome, String descricao, StatusCadastro status) {
-        public static PermissaoPlataformaInfo de(Permissao permissao) {
+        public static PermissaoPlataformaInfo de(PermissaoEntity permissao) {
             return new PermissaoPlataformaInfo(permissao.getId(), permissao.getCodigo(), permissao.getNomePlataforma(),
                     permissao.getDescricao(), permissao.getStatus());
         }
@@ -102,7 +102,7 @@ public final class ContratosAdministrativos {
 
     public record AplicacaoInfo(UUID id, String slug, String nome, TipoAplicacao tipo, String descricao,
                                 StatusCadastro status, Instant dataCriacao) {
-        public static AplicacaoInfo de(Aplicacao a) {
+        public static AplicacaoInfo de(AplicacaoEntity a) {
             return new AplicacaoInfo(a.getId(), a.getSlug(), a.getNome(), a.getTipo(), a.getDescricao(),
                     a.getStatus(), a.getDataCriacao());
         }
@@ -110,7 +110,7 @@ public final class ContratosAdministrativos {
 
     public record UsuarioInfo(UUID id, String login, String email, StatusUsuario status, Instant dataCriacao,
                               List<String> permissoesPlataforma) {
-        public static UsuarioInfo de(Usuario u, List<String> permissoesPlataforma) {
+        public static UsuarioInfo de(UsuarioEntity u, List<String> permissoesPlataforma) {
             return new UsuarioInfo(u.getId(), u.getLogin(), u.getEmail(), u.getStatus(), u.getDataCriacao(),
                     permissoesPlataforma);
         }
@@ -123,7 +123,7 @@ public final class ContratosAdministrativos {
 
     public record UsuarioListagem(UUID id, String login, String email, StatusUsuario status, Instant dataCriacao,
                                   TipoAcessoUsuario tipo, List<PermissaoUsuario> permissoes, List<String> permissoesPlataforma) {
-        public static UsuarioListagem de(Usuario u, TipoAcessoUsuario tipo, List<PermissaoUsuario> permissoes,
+        public static UsuarioListagem de(UsuarioEntity u, TipoAcessoUsuario tipo, List<PermissaoUsuario> permissoes,
                                          List<String> permissoesPlataforma) {
             return new UsuarioListagem(u.getId(), u.getLogin(), u.getEmail(), u.getStatus(), u.getDataCriacao(),
                     tipo, permissoes, permissoesPlataforma);
@@ -148,26 +148,26 @@ public final class ContratosAdministrativos {
     }
 
     public record PermissaoInfo(UUID id, String codigo, String descricao, StatusCadastro status) {
-        public static PermissaoInfo de(Permissao p) {
+        public static PermissaoInfo de(PermissaoEntity p) {
             return new PermissaoInfo(p.getId(), p.getCodigo(), p.getDescricao(), p.getStatus());
         }
     }
 
     public record PerfilInfo(UUID id, UUID idAplicacao, String nome, String descricao, StatusCadastro status) {
-        public static PerfilInfo de(Perfil p) {
+        public static PerfilInfo de(PerfilEntity p) {
             return new PerfilInfo(p.getId(), p.getIdAplicacao(), p.getNome(), p.getDescricao(), p.getStatus());
         }
     }
 
     public record VinculoInfo(UUID idUsuario, boolean ativo) {
-        public static VinculoInfo de(UsuarioAplicacao v) {
+        public static VinculoInfo de(UsuarioAplicacaoEntity v) {
             return new VinculoInfo(v.getId().getIdUsuario(), v.isAtivo());
         }
     }
 
     public record SessaoInfo(UUID id, UUID idUsuario, UUID idAplicacao, StatusSessao status, Instant dataCriacao,
                              Instant expiracaoAbsoluta, Instant expiracaoInatividade, Instant dataRevogacao) {
-        public static SessaoInfo de(Sessao s, Instant agora) {
+        public static SessaoInfo de(SessaoEntity s, Instant agora) {
             StatusSessao status = s.getStatus() == StatusSessao.ATIVO && !s.estaAtivaEm(agora)
                     ? StatusSessao.EXPIRADO : s.getStatus();
             return new SessaoInfo(s.getId(), s.getIdUsuario(), s.getIdAplicacao(), status, s.getDataCriacao(),
@@ -177,7 +177,7 @@ public final class ContratosAdministrativos {
 
     public record AuditoriaInfo(Long id, UUID idOperador, UUID idAplicacao, String acao, String tabela,
                                 JsonNode dados, Instant dataRegistro) {
-        public static AuditoriaInfo de(Auditoria a) {
+        public static AuditoriaInfo de(AuditoriaEntity a) {
             return new AuditoriaInfo(a.getId(), a.getIdUsuario(), a.getIdAplicacao(), a.getAcao(),
                     a.getTabelaAfetada(), a.getValorNovo(), a.getDataRegistro());
         }

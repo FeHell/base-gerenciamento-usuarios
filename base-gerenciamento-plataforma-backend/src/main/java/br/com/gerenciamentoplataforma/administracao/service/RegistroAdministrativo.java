@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.administracao.service;
 
-import br.com.gerenciamentoplataforma.auditoria.entity.Auditoria;
+import br.com.gerenciamentoplataforma.auditoria.entity.AuditoriaEntity;
 import br.com.gerenciamentoplataforma.auditoria.repository.AuditoriaRepository;
 import br.com.gerenciamentoplataforma.autenticacao.service.IdentidadeJwt;
 
@@ -33,6 +33,6 @@ class RegistroAdministrativo {
         if (idRelacionado != null) {
             dados.put("idRelacionado", idRelacionado.toString());
         }
-        auditoria.save(new Auditoria(idOperador(), idAplicacao, acao, tabela, null, dados, null));
+        auditoria.save(new AuditoriaEntity(idOperador(), idAplicacao, acao, tabela, null, dados, null));
     }
 }

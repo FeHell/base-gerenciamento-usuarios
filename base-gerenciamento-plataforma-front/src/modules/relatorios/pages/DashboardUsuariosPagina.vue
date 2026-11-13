@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { traduzirEnum } from '@/shared/traducoes/enums'
 import { computed, ref, watch } from 'vue'
 import {
   ArcElement,
@@ -15,7 +16,7 @@ import CabecalhoPagina from '@/components/ui/CabecalhoPagina.vue'
 import CampoSelecao from '@/components/ui/CampoSelecao.vue'
 import { useTema } from '@/modules/aparencia/stores/tema'
 import { ErroApi } from '@/services/clienteHttp'
-import { rotulosTipo, type DashboardUsuarios } from '@/modules/usuarios/contratos'
+import type { DashboardUsuarios } from '@/modules/usuarios/contratos'
 import { useUsuariosApi } from '@/modules/usuarios/services/usuariosApi'
 
 Chart.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip)
@@ -59,7 +60,9 @@ const graficoPermissoes: ChartOptions<'bar'> = {
       callbacks: {
         title: ([item]) => {
           const permissao = permissoesNoGrafico.value[item?.dataIndex ?? -1]
-          return permissao ? `${permissao.codigo} · ${permissao.aplicacao}` : ''
+          return permissao
+            ? `${traduzirEnum('permissao', permissao.codigo)} · ${permissao.aplicacao}`
+            : ''
         },
       },
     },
@@ -80,7 +83,7 @@ const indicadores = computed(() => {
 })
 const tipos = computed(() => dados.value?.porTipo ?? [])
 const dadosTipos = computed(() => ({
-  labels: tipos.value.map(({ tipo }) => rotulosTipo[tipo]),
+  labels: tipos.value.map(({ tipo }) => traduzirEnum('tipoAcesso', tipo)),
   datasets: [
     {
       data: tipos.value.map(({ total }) => total),
@@ -93,7 +96,7 @@ const permissoesNoGrafico = computed(() => dados.value?.porPermissao.slice(0, 8)
 const abreviar = (texto: string) => (texto.length > 21 ? texto.slice(0, 20) + '…' : texto)
 const dadosPermissoes = computed(() => ({
   labels: permissoesNoGrafico.value.map((item) => [
-    abreviar(item.codigo),
+    abreviar(traduzirEnum('permissao', item.codigo)),
     abreviar(item.aplicacao),
   ]),
   datasets: [
@@ -179,7 +182,7 @@ watch(periodo, carregar, { immediate: true })
           <li v-for="(item, i) in tipos" :key="item.tipo">
             <span class="tipo"
               ><i :style="{ backgroundColor: tema.coresGrafico[i] }" aria-hidden="true" />{{
-                rotulosTipo[item.tipo]
+                traduzirEnum('tipoAcesso', item.tipo)
               }}</span
             >
             <strong
@@ -213,7 +216,7 @@ watch(periodo, carregar, { immediate: true })
             <ul class="totais">
               <li v-for="item in dados.porPermissao" :key="item.aplicacao + ':' + item.codigo">
                 <span
-                  ><strong>{{ item.codigo }}</strong
+                  ><strong>{{ traduzirEnum('permissao', item.codigo) }}</strong
                   ><br />{{ item.aplicacao }}</span
                 >
                 <strong>{{ numeros.format(item.total) }}</strong>

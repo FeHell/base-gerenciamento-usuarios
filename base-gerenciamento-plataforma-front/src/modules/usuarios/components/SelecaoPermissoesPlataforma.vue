@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { traduzirEnum } from '@/shared/traducoes/enums'
 import { onMounted, ref } from 'vue'
 import BotaoBase from '@/components/ui/BotaoBase.vue'
 import { ErroApi } from '@/services/clienteHttp'
@@ -51,8 +52,10 @@ onMounted(carregar)
           :disabled="opcao.status === 'INATIVO' && !selecionadas.includes(opcao.codigo)"
         />
         <span>
-          <strong>{{ opcao.nome }}</strong>
-          <span v-if="opcao.status === 'INATIVO'"> · Inativa</span>
+          <strong>{{ traduzirEnum('permissao', opcao.codigo, opcao.nome) }}</strong>
+          <span v-if="opcao.status === 'INATIVO'">
+            · {{ traduzirEnum('statusPermissao', opcao.status) }}</span
+          >
           <small v-if="opcao.descricao">{{ opcao.descricao }}</small>
         </span>
       </label>

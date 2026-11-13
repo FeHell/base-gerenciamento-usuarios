@@ -19,7 +19,7 @@ import org.hibernate.generator.EventType;
 
 @Entity
 @Table(name = "tokens_atualizacao")
-public class TokenAtualizacao {
+public class TokenAtualizacaoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false)
@@ -59,19 +59,19 @@ public class TokenAtualizacao {
         @JoinColumn(name = "id_sessao", referencedColumnName = "id", insertable = false, updatable = false),
         @JoinColumn(name = "id_familia", referencedColumnName = "id_familia", insertable = false, updatable = false)
     })
-    private Sessao sessao;
+    private SessaoEntity sessao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
         @JoinColumn(name = "id_anterior", referencedColumnName = "id", insertable = false, updatable = false),
         @JoinColumn(name = "id_familia", referencedColumnName = "id_familia", insertable = false, updatable = false)
     })
-    private TokenAtualizacao anterior;
+    private TokenAtualizacaoEntity anterior;
 
-    protected TokenAtualizacao() {
+    protected TokenAtualizacaoEntity() {
     }
 
-    public TokenAtualizacao(
+    public TokenAtualizacaoEntity(
             UUID idSessao,
             UUID idFamilia,
             String hashToken,
@@ -124,11 +124,11 @@ public class TokenAtualizacao {
         return revogado;
     }
 
-    public Sessao getSessao() {
+    public SessaoEntity getSessao() {
         return sessao;
     }
 
-    public TokenAtualizacao getAnterior() {
+    public TokenAtualizacaoEntity getAnterior() {
         return anterior;
     }
 

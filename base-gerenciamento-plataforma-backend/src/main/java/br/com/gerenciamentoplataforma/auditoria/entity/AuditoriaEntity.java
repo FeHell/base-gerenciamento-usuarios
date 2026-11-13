@@ -1,7 +1,7 @@
 package br.com.gerenciamentoplataforma.auditoria.entity;
 
-import br.com.gerenciamentoplataforma.aplicacao.entity.Aplicacao;
-import br.com.gerenciamentoplataforma.usuario.entity.Usuario;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoEntity;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
@@ -23,7 +23,7 @@ import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "auditoria")
-public class Auditoria {
+public class AuditoriaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
@@ -58,16 +58,16 @@ public class Auditoria {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario", referencedColumnName = "id", insertable = false, updatable = false)
-    private Usuario usuario;
+    private UsuarioEntity usuario;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_aplicacao", referencedColumnName = "id", insertable = false, updatable = false)
-    private Aplicacao aplicacao;
+    private AplicacaoEntity aplicacao;
 
-    protected Auditoria() {
+    protected AuditoriaEntity() {
     }
 
-    public Auditoria(
+    public AuditoriaEntity(
             UUID idUsuario,
             UUID idAplicacao,
             String acao,
@@ -120,11 +120,11 @@ public class Auditoria {
         return dataRegistro;
     }
 
-    public Usuario getUsuario() {
+    public UsuarioEntity getUsuario() {
         return usuario;
     }
 
-    public Aplicacao getAplicacao() {
+    public AplicacaoEntity getAplicacao() {
         return aplicacao;
     }
 }

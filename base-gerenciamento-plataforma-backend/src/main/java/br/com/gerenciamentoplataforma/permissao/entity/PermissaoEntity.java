@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "permissao")
-public class Permissao {
+public class PermissaoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false)
@@ -34,17 +34,17 @@ public class Permissao {
     @Column(name = "status", nullable = false, length = 50)
     private StatusCadastro status;
 
-    protected Permissao() {
+    protected PermissaoEntity() {
     }
 
-    public Permissao(String codigo, String descricao, StatusCadastro status) {
+    public PermissaoEntity(String codigo, String descricao, StatusCadastro status) {
         this.codigo = Objects.requireNonNull(codigo, "codigo");
         this.descricao = descricao;
         this.status = Objects.requireNonNull(status, "status");
     }
 
-    public static Permissao daPlataforma(String codigo, String nome, String descricao) {
-        var permissao = new Permissao(codigo, descricao, StatusCadastro.ATIVO);
+    public static PermissaoEntity daPlataforma(String codigo, String nome, String descricao) {
+        var permissao = new PermissaoEntity(codigo, descricao, StatusCadastro.ATIVO);
         permissao.nomePlataforma = Objects.requireNonNull(nome, "nome");
         return permissao;
     }

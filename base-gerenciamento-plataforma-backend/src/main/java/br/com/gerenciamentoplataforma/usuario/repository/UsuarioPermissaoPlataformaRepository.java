@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.usuario.repository;
 
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataforma;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaId;
 
 import java.util.List;
@@ -10,15 +10,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface UsuarioPermissaoPlataformaRepository
-        extends JpaRepository<UsuarioPermissaoPlataforma, UsuarioPermissaoPlataformaId> {
+        extends JpaRepository<UsuarioPermissaoPlataformaEntity, UsuarioPermissaoPlataformaId> {
 
     String PERMISSOES_ATRIBUIDAS = """
-            from UsuarioPermissaoPlataforma concessao
-            join Permissao permissao on permissao.id = concessao.id.idPermissao
+            from UsuarioPermissaoPlataformaEntity concessao
+            join PermissaoEntity permissao on permissao.id = concessao.id.idPermissao
             where permissao.nomePlataforma is not null
             """;
 
-    List<UsuarioPermissaoPlataforma> findByIdIdUsuario(UUID idUsuario);
+    List<UsuarioPermissaoPlataformaEntity> findByIdIdUsuario(UUID idUsuario);
 
     @Query("select concessao.id.idUsuario as idUsuario, permissao.codigo as codigo " + PERMISSOES_ATRIBUIDAS + """
             and concessao.id.idUsuario in :usuarios

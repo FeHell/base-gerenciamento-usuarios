@@ -1,15 +1,15 @@
 package br.com.gerenciamentoplataforma.persistencia;
 
 import br.com.gerenciamentoplataforma.BaseGerenciamentoPlataformaApplication;
-import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissao;
+import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissaoEntity;
 import br.com.gerenciamentoplataforma.aplicacao.entity.AplicacaoPermissaoId;
-import br.com.gerenciamentoplataforma.perfil.entity.PerfilPermissao;
+import br.com.gerenciamentoplataforma.perfil.entity.PerfilPermissaoEntity;
 import br.com.gerenciamentoplataforma.perfil.entity.PerfilPermissaoId;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacao;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioAplicacaoId;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfil;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfilEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfilId;
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataforma;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPermissaoPlataformaId;
 
 import jakarta.persistence.EntityManagerFactory;
@@ -45,15 +45,17 @@ class MapeamentoPersistenciaTest {
                     assertThat(contexto).hasNotFailed();
                     var metamodelo = contexto.getBean(EntityManagerFactory.class).getMetamodel();
                     assertThat(metamodelo.getEntities()).hasSize(12);
-                    assertThat(metamodelo.entity(UsuarioAplicacao.class).getIdType().getJavaType())
+                    assertThat(metamodelo.getEntities()).allSatisfy(entidade ->
+                            assertThat(entidade.getJavaType().getSimpleName()).endsWith("Entity"));
+                    assertThat(metamodelo.entity(UsuarioAplicacaoEntity.class).getIdType().getJavaType())
                             .isEqualTo(UsuarioAplicacaoId.class);
-                    assertThat(metamodelo.entity(AplicacaoPermissao.class).getIdType().getJavaType())
+                    assertThat(metamodelo.entity(AplicacaoPermissaoEntity.class).getIdType().getJavaType())
                             .isEqualTo(AplicacaoPermissaoId.class);
-                    assertThat(metamodelo.entity(PerfilPermissao.class).getIdType().getJavaType())
+                    assertThat(metamodelo.entity(PerfilPermissaoEntity.class).getIdType().getJavaType())
                             .isEqualTo(PerfilPermissaoId.class);
-                    assertThat(metamodelo.entity(UsuarioPerfil.class).getIdType().getJavaType())
+                    assertThat(metamodelo.entity(UsuarioPerfilEntity.class).getIdType().getJavaType())
                             .isEqualTo(UsuarioPerfilId.class);
-                    assertThat(metamodelo.entity(UsuarioPermissaoPlataforma.class).getIdType().getJavaType())
+                    assertThat(metamodelo.entity(UsuarioPermissaoPlataformaEntity.class).getIdType().getJavaType())
                             .isEqualTo(UsuarioPermissaoPlataformaId.class);
                 });
     }

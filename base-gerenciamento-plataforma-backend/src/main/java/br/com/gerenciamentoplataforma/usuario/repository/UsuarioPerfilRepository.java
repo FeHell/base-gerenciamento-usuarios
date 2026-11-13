@@ -1,6 +1,6 @@
 package br.com.gerenciamentoplataforma.usuario.repository;
 
-import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfil;
+import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfilEntity;
 import br.com.gerenciamentoplataforma.usuario.entity.UsuarioPerfilId;
 
 import java.util.List;
@@ -11,15 +11,15 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface UsuarioPerfilRepository extends JpaRepository<UsuarioPerfil, UsuarioPerfilId> {
+public interface UsuarioPerfilRepository extends JpaRepository<UsuarioPerfilEntity, UsuarioPerfilId> {
 
     String VINCULOS_ATIVOS = """
-            from UsuarioPerfil vinculoPerfil
+            from UsuarioPerfilEntity vinculoPerfil
             join vinculoPerfil.usuarioAplicacao vinculoAplicacao
             join vinculoAplicacao.usuario usuario
             join vinculoAplicacao.aplicacao aplicacao
             join vinculoPerfil.perfil perfil
-            join PerfilPermissao atribuicao
+            join PerfilPermissaoEntity atribuicao
               on atribuicao.id.idAplicacao = vinculoPerfil.id.idAplicacao
              and atribuicao.id.idPerfil = vinculoPerfil.id.idPerfil
             join atribuicao.aplicacaoPermissao habilitacao
@@ -31,10 +31,10 @@ public interface UsuarioPerfilRepository extends JpaRepository<UsuarioPerfil, Us
               and permissao.status = br.com.gerenciamentoplataforma.common.StatusCadastro.ATIVO
             """;
 
-    List<UsuarioPerfil> findByIdIdUsuarioAndIdIdAplicacaoOrderByIdIdPerfil(UUID idUsuario, UUID idAplicacao);
+    List<UsuarioPerfilEntity> findByIdIdUsuarioAndIdIdAplicacaoOrderByIdIdPerfil(UUID idUsuario, UUID idAplicacao);
 
     @Modifying
-    @Query("delete from UsuarioPerfil vp where vp.id.idUsuario = :idUsuario and vp.id.idAplicacao = :idAplicacao")
+    @Query("delete from UsuarioPerfilEntity vp where vp.id.idUsuario = :idUsuario and vp.id.idAplicacao = :idAplicacao")
     void removerDaAplicacao(@Param("idUsuario") UUID idUsuario, @Param("idAplicacao") UUID idAplicacao);
 
     @Query("select distinct permissao.codigo " + VINCULOS_ATIVOS + """

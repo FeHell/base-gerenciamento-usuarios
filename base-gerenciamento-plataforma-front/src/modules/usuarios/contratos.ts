@@ -1,18 +1,8 @@
-export const rotulosStatus = {
-  ATIVO: 'Ativo',
-  BLOQUEADO: 'Bloqueado',
-  PENDENTE: 'Pendente',
-  INATIVO: 'Inativo',
-} as const
+import { opcoesEnum, type ValorEnum } from '@/shared/traducoes/enums'
 
-export const rotulosTipo = {
-  PLATAFORMA: 'Administrador da plataforma',
-  APLICACAO: 'Administrador de aplicação',
-  USUARIO: 'Usuário',
-} as const
-
-export type StatusUsuario = keyof typeof rotulosStatus
-export type TipoAcesso = keyof typeof rotulosTipo
+export type StatusUsuario = ValorEnum<'statusUsuario'>
+export type TipoAcesso = ValorEnum<'tipoAcesso'>
+type StatusCadastro = ValorEnum<'statusCadastro'>
 
 export interface Usuario {
   id: string
@@ -61,35 +51,28 @@ export interface NovoUsuario {
 
 export type AtualizarUsuario = Pick<Usuario, 'login' | 'email' | 'status' | 'permissoesPlataforma'>
 
-export const opcoesStatus = (Object.keys(rotulosStatus) as StatusUsuario[]).map((valor) => ({
-  valor,
-  texto: rotulosStatus[valor],
-}))
-
-export const opcoesTipo = (Object.keys(rotulosTipo) as TipoAcesso[]).map((valor) => ({
-  valor,
-  texto: rotulosTipo[valor],
-}))
+export const opcoesStatus = opcoesEnum('statusUsuario')
+export const opcoesTipo = opcoesEnum('tipoAcesso')
 
 export interface AplicacaoAcesso {
   id: string
   slug: string
   nome: string
-  status: 'ATIVO' | 'INATIVO'
+  status: StatusCadastro
 }
 
 export interface PerfilAcesso {
   id: string
   nome: string
   descricao: string | null
-  status: 'ATIVO' | 'INATIVO'
+  status: StatusCadastro
 }
 
 export interface PermissaoAcesso {
   id: string
   codigo: string
   descricao: string | null
-  status: 'ATIVO' | 'INATIVO'
+  status: StatusCadastro
 }
 
 export interface PermissaoPlataforma extends PermissaoAcesso {

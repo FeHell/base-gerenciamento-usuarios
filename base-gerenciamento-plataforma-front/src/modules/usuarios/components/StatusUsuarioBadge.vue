@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { rotulosStatus, type StatusUsuario } from '../contratos'
+import { traduzirEnum } from '@/shared/traducoes/enums'
+import type { StatusUsuario } from '../contratos'
 defineProps<{ status: StatusUsuario }>()
 </script>
 
 <template>
   <span class="status" :class="'status--' + status.toLowerCase()">
-    {{ rotulosStatus[status] }}
+    {{ traduzirEnum('statusUsuario', status) }}
   </span>
 </template>
 
